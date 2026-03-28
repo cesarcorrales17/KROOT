@@ -1,0 +1,269 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap');
+
+.login-layout {
+  --primary: #002B5B;
+  --secondary: #50C878;
+  --tertiary: #10B981;
+  --surface: #F8FAFC;
+  --on-surface: #191C1E;
+  --on-surface-variant: #43474F;
+  --error: #BA1A1A;
+
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  background-color: var(--surface);
+  color: var(--on-surface);
+  position: relative;
+  
+  @media (min-width: 992px) { flex-direction: row; }
+}
+
+/* =========================================
+   Lado Izquierdo (Mesh Gradient Agradable)
+   ========================================= */
+.visual-section {
+  display: none;
+  
+  @media (min-width: 992px) {
+    display: flex;
+    width: 50%;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 4rem;
+    z-index: 1;
+  }
+
+  // Fondo Claro, Limpio y Sofisticado (Cero negros)
+  .elegant-mesh-bg {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: calc(100% + 8vw); 
+    clip-path: polygon(0 0, 100% 0, calc(100% - 8vw) 100%, 0 100%);
+    background: var(--primary); // Azul puro de base
+    z-index: -1;
+    overflow: hidden;
+
+    .mesh-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.8;
+      animation: floatMesh 15s ease-in-out infinite alternate;
+    }
+
+    // Luces suaves para crear el gradiente fluido
+    .orb-1 { width: 60vw; height: 60vw; background: var(--secondary); top: -20%; left: -10%; opacity: 0.25; }
+    .orb-2 { width: 50vw; height: 50vw; background: #004d80; bottom: -20%; right: -10%; animation-delay: -5s; animation-duration: 20s; }
+    .orb-3 { width: 40vw; height: 40vw; background: var(--tertiary); top: 40%; left: 30%; animation-delay: -10s; opacity: 0.2; }
+
+    .glass-layer {
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 100%);
+      backdrop-filter: blur(20px); // Difumina todo unificando los colores
+    }
+  }
+
+  @keyframes floatMesh {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(10%, -10%) scale(1.1); }
+  }
+
+  .visual-content {
+    position: relative;
+    z-index: 2;
+    max-width: 480px;
+    width: 100%;
+    padding-right: 2rem; 
+  }
+
+  .hero-phrase {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 800;
+    font-size: 2.75rem;
+    line-height: 1.25;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+    margin-bottom: 3.5rem;
+  }
+
+  // Bento Grid Transparente y Limpio
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.25rem;
+    
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 1.5rem;
+      color: #ffffff;
+      transition: transform 0.3s ease, background 0.3s ease;
+
+      &:hover {
+        transform: translateY(-4px);
+        background: rgba(255, 255, 255, 0.12);
+      }
+    }
+
+    .bento-item {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+
+      &.wide {
+        grid-column: span 2;
+        min-height: auto;
+      }
+
+      .bento-header {
+        display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;
+
+        .icon-minimal {
+          width: 36px; height: 36px; border-radius: 10px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(255, 255, 255, 0.2);
+          color: #ffffff;
+          
+          &.secondary { background: rgba(80, 200, 120, 0.25); color: var(--secondary); }
+        }
+
+        .status-indicator {
+          font-size: 0.7rem; font-weight: 700; color: var(--secondary);
+          background: rgba(80, 200, 120, 0.15); padding: 4px 8px; border-radius: 6px;
+        }
+      }
+
+      .bento-body {
+        display: flex; flex-direction: column;
+        .bento-title { font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 1.15rem; color: #ffffff; }
+        .bento-subtitle { font-size: 0.8rem; color: rgba(255, 255, 255, 0.8); margin-top: 4px; }
+      }
+
+      .sync-content {
+        display: flex; justify-content: space-between; align-items: center; width: 100%;
+        .sync-text { display: flex; flex-direction: column; }
+        .spin-icon { color: rgba(255, 255, 255, 0.5); animation: spinSync 6s linear infinite; }
+      }
+    }
+  }
+
+  @keyframes spinSync {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+}
+
+/* =========================================
+   Lado Derecho (Formulario + Logo)
+   ========================================= */
+.form-section {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background: transparent; 
+  z-index: 2;
+  
+  @media (min-width: 992px) { width: 50%; }
+
+  .form-container {
+    flex: 1; display: flex; flex-direction: column; justify-content: center;
+    padding: 2rem; max-width: 440px; width: 100%; margin: 0 auto; margin-top: 1rem; 
+    @media (min-width: 600px) { padding: 3rem; }
+  }
+
+  .brand-header {
+    margin-bottom: 2.5rem; text-align: left;
+    .brand-logo { height: 56px; width: auto; object-fit: contain; }
+    .brand-fallback { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 2.25rem; color: var(--primary); letter-spacing: -1px; }
+  }
+
+  .titles {
+    margin-bottom: 2.5rem;
+    h2 { font-family: 'Manrope', sans-serif; font-weight: 800; font-size: 2.25rem; color: var(--on-surface); margin: 0 0 0.5rem 0; letter-spacing: -0.5px; }
+    p { color: var(--on-surface-variant); margin: 0; font-size: 1rem; }
+  }
+
+  .login-form {
+    display: flex; flex-direction: column; gap: 1.5rem; 
+
+    .field-wrapper {
+      position: relative; width: 100%;
+      .password-header {
+        display: flex; justify-content: flex-end; margin-bottom: 0.5rem;
+        .forgot-link { font-size: 0.875rem; font-weight: 600; color: var(--primary); text-decoration: none; &:hover { color: var(--tertiary); text-decoration: underline; } }
+      }
+    }
+
+    .full-width { width: 100%; }
+    .checkbox-wrapper { margin-top: -0.5rem; }
+
+    .submit-btn {
+      width: 100%; padding: 1.75rem 0; border-radius: 12px; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 1.125rem; background-color: var(--primary); color: #ffffff; margin-top: 1rem; box-shadow: 0 10px 25px -5px rgba(0, 43, 91, 0.2);
+      &:not([disabled]):hover { transform: translateY(-2px); box-shadow: 0 15px 30px -5px rgba(0, 43, 91, 0.3); }
+      &[disabled] { opacity: 0.6; background-color: var(--on-surface-variant); box-shadow: none; transform: none; }
+    }
+
+    .divider {
+      position: relative; text-align: center; margin: 1.5rem 0;
+      &::before { content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: #E2E8F0; z-index: 1; }
+      span { position: relative; z-index: 2; background: var(--surface); padding: 0 1rem; color: var(--on-surface-variant); font-size: 0.875rem; font-weight: 500; text-transform: uppercase; }
+    }
+
+    .oauth-btn {
+      width: 100%; padding: 1.25rem 0; border-radius: 12px; border: 1px solid #E2E8F0; background: transparent; color: var(--on-surface); font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 0.75rem; cursor: pointer; transition: all 0.2s ease;
+      &:hover { background-color: #f8fafc; border-color: #cbd5e1; }
+      .google-icon { width: 20px; height: 20px; }
+    }
+  }
+
+  .signup-prompt {
+    text-align: center; margin-top: 2.5rem; color: var(--on-surface-variant);
+    .signup-link { color: var(--secondary); font-weight: 600; text-decoration: none; margin-left: 0.25rem; &:hover { text-decoration: underline; } }
+  }
+
+  .form-footer {
+    display: flex; justify-content: center; gap: 2rem; padding: 2rem; font-size: 13px; font-weight: 500; color: #94A3B8;
+    a { color: inherit; text-decoration: none; transition: color 0.2s; &:hover { color: var(--primary); } }
+  }
+}
+
+/* AQUÍ ESTÁ LA CORRECCIÓN DE LA CASILLA */
+::ng-deep {
+  .mdc-text-field--outlined {
+    --mdc-outlined-text-field-container-shape: 12px;
+    --mdc-outlined-text-field-focus-outline-color: var(--primary);
+    --mdc-outlined-text-field-hover-outline-color: var(--primary);
+    .mdc-notched-outline { border-color: #e2e8f0; }
+  }
+  
+  .mdc-checkbox {
+    // Esto asegura que al seleccionar, el fondo sea tu azul corporativo y el ícono blanco
+    --mdc-checkbox-selected-icon-color: var(--primary);
+    --mdc-checkbox-selected-focus-icon-color: var(--primary);
+    --mdc-checkbox-selected-hover-icon-color: var(--primary);
+    --mdc-checkbox-selected-pressed-icon-color: var(--primary);
+    --mdc-checkbox-selected-checkmark-color: #ffffff;
+  }
+}
+
+// Ajustes para el botón con loader
+.submit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  .custom-spinner {
+    ::ng-deep circle {
+      stroke: #ffffff !important; // Fuerza a que el círculo del loader sea blanco
+    }
+  }
+}

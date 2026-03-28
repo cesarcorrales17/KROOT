@@ -1,1 +1,18 @@
-/* You can add global styles to this file, and also import other style files */
+/* Importar tipografías base */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* Importar un tema preconstruido de Material para que los inputs funcionen */
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+/* Reseteo básico de la página para que el layout ocupe todo el espacio */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}

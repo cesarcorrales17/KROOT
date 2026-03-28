@@ -6,6 +6,6 @@ import { provideAnimationsAsync } from '@angular/platform-browser/animations/asy
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
-    provideAnimationsAsync() // <-- Vital para que Material no se vea "feo"
+    provideAnimationsAsync() // <-- ESTO ES LA MAGIA QUE ACTIVA MATERIAL
   ]
 };
