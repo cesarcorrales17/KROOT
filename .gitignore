@@ -1,0 +1,14 @@
+# Node / Angular
+frontend/node_modules/
+frontend/.angular/
+frontend/dist/
+
+# Python / FastAPI
+backend/__pycache__/
+backend/.venv/
+backend/.env
+
+# IDE & OS
+.vscode/
+.DS_Store
+Thumbs.db
