@@ -1,14 +1,19 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router'; // <-- IMPORTACIÓN DEL ENRUTADOR
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner'; // <- El loader
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { trigger, transition, style, animate } from '@angular/animations';
 
+// IMPORTACIÓN DE SERVICIOS
+import { AuthService } from '../../services/auth.service';
+
+// CONFIGURACIÓN DEL COMPONENTE Y ANIMACIONES
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -24,7 +29,6 @@ import { trigger, transition, style, animate } from '@angular/animations';
   ],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
-  // Esta animación hace que el contenido entre suavemente hacia arriba
   animations: [
     trigger('fadeInUp', [
       transition(':enter', [
@@ -35,51 +39,64 @@ import { trigger, transition, style, animate } from '@angular/animations';
   ]
 })
 export class LoginComponent {
+  // ESTADO DE LA INTERFAZ
   loginForm: FormGroup;
   hidePassword = true;
   logoError = false;
-  
-  // Variable para controlar el estado de carga (Loader)
   isLoading = false;
+  errorMessage = ''; 
+
+  // INYECCIÓN DE DEPENDENCIAS
+  private authService = inject(AuthService);
+  private router = inject(Router); // <-- INYECCIÓN DEL ENRUTADOR
 
   constructor(private fb: FormBuilder) {
-    // Inicialización del formulario con sus validaciones
+    // INICIALIZACIÓN DEL FORMULARIO
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
-      rememberMe: [false] // Captura el estado de "Mantenerme conectado"
+      rememberMe: [false]
     });
   }
 
-  // Si la imagen del logo falla, muestra el texto por defecto
+  // MANEJO DE IMAGEN FALLIDA
   handleLogoError() {
     this.logoError = true;
   }
 
-  // Función que se ejecuta al presionar "Ingresar"
+  // PROCESAMIENTO DEL FORMULARIO
   onSubmit() {
     if (this.loginForm.valid) {
-      // 1. Activamos el loader y deshabilitamos el botón
       this.isLoading = true;
+      this.errorMessage = ''; 
       
-      // 2. Extraemos los datos listos para enviar a FastAPI
       const loginData = this.loginForm.value;
-      console.log('Datos listos para enviar al Backend:', loginData);
-      // Fíjate en la consola del navegador: verás "rememberMe: true" o "false"
 
-      // 3. Simulamos la petición al servidor (2 segundos de espera)
-      // Cuando tengamos FastAPI, esto se reemplazará por un this.http.post(...)
-      setTimeout(() => {
-        this.isLoading = false;
-        
-        // Aquí iría la lógica de éxito:
-        // localStorage.setItem('token', respuesta.token);
-        // this.router.navigate(['/dashboard']);
-        
-      }, 2000);
-
+      // COMUNICACIÓN CON EL BACKEND
+      this.authService.login(loginData).subscribe({
+        next: (response) => {
+          this.isLoading = false;
+          
+          // REDIRECCIÓN AL DASHBOARD TRAS ÉXITO
+          this.router.navigate(['/dashboard']);
+        },
+        error: (err) => {
+          this.isLoading = false;
+          
+          // MANEJO DE CÓDIGOS DE ESTADO HTTP
+          if (err.status === 401) {
+            // Error 401: Contraseña incorrecta (Muestra los intentos restantes que envía FastAPI)
+            this.errorMessage = err.error.detail || 'Correo o contraseña incorrectos.';
+          } else if (err.status === 403) {
+            // Error 403: Cuenta bloqueada por seguridad (15 minutos)
+            this.errorMessage = err.error.detail || 'Cuenta bloqueada temporalmente.';
+          } else {
+            // Error genérico de servidor apagado o sin internet
+            this.errorMessage = 'Error de conexión con el servidor.';
+          }
+        }
+      });
     } else {
-      // Si el usuario intentó enviar el formulario vacío, marcamos los errores en rojo
       this.loginForm.markAllAsTouched();
     }
   }

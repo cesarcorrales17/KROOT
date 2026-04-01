@@ -101,12 +101,17 @@
           <mat-checkbox formControlName="rememberMe" color="primary">Mantenerme conectado</mat-checkbox>
         </div>
 
+        <div *ngIf="errorMessage" class="server-error" style="color: var(--error); font-size: 0.875rem; text-align: center; margin-bottom: 1rem; font-weight: 500;">
+          {{ errorMessage }}
+        </div>
+
         <button mat-flat-button color="primary" class="submit-btn" type="submit" [disabled]="loginForm.invalid || isLoading"> 
           <mat-spinner diameter="24" *ngIf="isLoading" class="custom-spinner"></mat-spinner>
 
           <span *ngIf="!isLoading">Ingresar</span>
           <span *ngIf="isLoading" style="margin-left: 8px;">Validando credenciales</span>
-          </button>
+        </button>
+        
         <div class="divider"><span>O continúa con</span></div>
 
         <button mat-stroked-button class="oauth-btn" type="button">
