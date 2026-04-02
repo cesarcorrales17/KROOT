@@ -1,0 +1,190 @@
+<div class="register-page">
+
+  <!-- Top Navbar -->
+  <nav class="top-nav">
+  <div class="nav-brand">
+    <a routerLink="/">
+      <img src="assets/logo/logoregister.png" alt="Logo" class="nav-logo" />
+    </a>
+  </div>
+
+  <button class="nav-help" type="button">
+    <mat-icon>help_outline</mat-icon>
+  </button>
+</nav>
+
+  <!-- Main content -->
+  <main class="register-main">
+    <div class="register-card" @fadeInUp>
+
+      <!-- Step indicator -->
+      <div class="step-header">
+        <p class="step-label">PASO {{ currentStep }} DE {{ totalSteps }}</p>
+        <h2 class="step-title">{{ stepTitles[currentStep - 1] }}</h2>
+        <div class="progress-bar">
+          <div class="progress-fill" [style.width.%]="(currentStep / totalSteps) * 100"></div>
+        </div>
+      </div>
+
+      <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form-body">
+
+        <!-- ───── STEP 1: Cuenta ───── -->
+        <div class="step-content" *ngIf="currentStep === 1" @stepFade>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Correo electrónico</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="nombre@empresa.com" autocomplete="email">
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <mat-error *ngIf="registerForm.get('email')?.hasError('required')">El correo es requerido</mat-error>
+            <mat-error *ngIf="registerForm.get('email')?.hasError('email')">Correo inválido</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Confirmar correo</mat-label>
+            <input matInput formControlName="confirmEmail" type="email" placeholder="Repite tu correo" autocomplete="email">
+            <mat-icon matPrefix>alternate_email</mat-icon>
+            <mat-error *ngIf="registerForm.get('confirmEmail')?.hasError('mismatch')">Los correos no coinciden</mat-error>
+          </mat-form-field>
+
+          <div class="password-field">
+            <mat-form-field appearance="outline" class="field-full">
+              <mat-label>Crear contraseña</mat-label>
+              <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="password" placeholder="Mín. 8 caracteres" autocomplete="new-password">
+              <mat-icon matPrefix>lock_outline</mat-icon>
+              <button mat-icon-button matSuffix (click)="hidePassword = !hidePassword" type="button" [attr.aria-label]="hidePassword ? 'Mostrar contraseña' : 'Ocultar contraseña'">
+                <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <!-- Strength meter -->
+            <div class="strength-meter">
+              <div class="strength-bars">
+                <div class="bar" [class.active]="passwordStrength >= 1" [class.weak]="passwordStrength === 1" [class.medium]="passwordStrength === 2" [class.strong]="passwordStrength >= 3"></div>
+                <div class="bar" [class.active]="passwordStrength >= 2" [class.medium]="passwordStrength === 2" [class.strong]="passwordStrength >= 3"></div>
+                <div class="bar" [class.active]="passwordStrength >= 3" [class.strong]="passwordStrength >= 3"></div>
+              </div>
+              <div class="strength-info">
+                <span class="strength-label" [class.weak-text]="passwordStrength === 1" [class.medium-text]="passwordStrength === 2" [class.strong-text]="passwordStrength >= 3">
+                  {{ strengthLabel }}
+                </span>
+                <span class="strength-hint">Al menos 8 caracteres</span>
+              </div>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Confirmar contraseña</mat-label>
+            <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmPassword" autocomplete="new-password">
+            <mat-icon matPrefix>lock_reset</mat-icon>
+            <button mat-icon-button matSuffix (click)="hideConfirmPassword = !hideConfirmPassword" type="button">
+              <mat-icon>{{ hideConfirmPassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="registerForm.get('confirmPassword')?.hasError('mismatch')">Las contraseñas no coinciden</mat-error>
+          </mat-form-field>
+
+        </div>
+
+        <!-- ───── STEP 2: Identidad ───── -->
+        <div class="step-content" *ngIf="currentStep === 2" @stepFade>
+
+          <div class="doc-row">
+            <mat-form-field appearance="outline" class="col-type">
+              <mat-label>Tipo</mat-label>
+              <mat-select formControlName="documentType">
+                <mat-option value="cc">CC</mat-option>
+                <mat-option value="ce">CE</mat-option>
+                <mat-option value="nit">NIT</mat-option>
+                <mat-option value="pasaporte">Pasaporte</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="col-number">
+              <mat-label>Número de documento</mat-label>
+              <input matInput formControlName="documentNumber" type="text" placeholder="Ej: 10234567">
+              <mat-icon matPrefix>badge</mat-icon>
+              <mat-error *ngIf="registerForm.get('documentNumber')?.hasError('pattern')">Solo números</mat-error>
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Nombres y apellidos</mat-label>
+            <input matInput formControlName="fullName" placeholder="Ingresa tu nombre completo" autocomplete="name">
+            <mat-icon matPrefix>person_outline</mat-icon>
+            <mat-error *ngIf="registerForm.get('fullName')?.hasError('minlength')">Mínimo 3 caracteres</mat-error>
+          </mat-form-field>
+
+        </div>
+
+        <!-- ───── STEP 3: Confirmación ───── -->
+        <div class="step-content" *ngIf="currentStep === 3" @stepFade>
+          <div class="confirm-summary">
+
+            <div class="summary-icon">
+              <mat-icon>check_circle_outline</mat-icon>
+            </div>
+
+            <h3 class="summary-heading">Revisa tu información</h3>
+            <p class="summary-sub">Confirma que todo esté correcto antes de crear tu cuenta.</p>
+
+            <div class="summary-items">
+              <div class="summary-row">
+                <span class="summary-key">Correo</span>
+                <span class="summary-val">{{ registerForm.get('email')?.value }}</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-key">Documento</span>
+                <span class="summary-val">{{ registerForm.get('documentType')?.value?.toUpperCase() }} {{ registerForm.get('documentNumber')?.value }}</span>
+              </div>
+              <div class="summary-row">
+                <span class="summary-key">Nombre</span>
+                <span class="summary-val">{{ registerForm.get('fullName')?.value }}</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ───── Navigation buttons ───── -->
+        <div class="step-actions">
+
+          <button *ngIf="currentStep < totalSteps" mat-flat-button class="btn-next" type="button" (click)="nextStep()" [disabled]="!isCurrentStepValid()">
+            Siguiente <mat-icon>arrow_forward</mat-icon>
+          </button>
+
+          <button *ngIf="currentStep === totalSteps" mat-flat-button class="btn-next" type="submit" [disabled]="isLoading || registerForm.invalid">
+            <span *ngIf="!isLoading">Crear cuenta</span>
+            <mat-spinner *ngIf="isLoading" diameter="22"></mat-spinner>
+          </button>
+
+          <button *ngIf="currentStep > 1" mat-stroked-button class="btn-back" type="button" (click)="prevStep()">
+            <mat-icon>arrow_back</mat-icon> Atrás
+          </button>
+
+        </div>
+
+        <!-- Google option solo en step 1 -->
+        <ng-container *ngIf="currentStep === 1">
+          <div class="divider"><span>O regístrate con</span></div>
+          <button class="google-btn" type="button">
+            <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+            Continuar con Google
+          </button>
+        </ng-container>
+
+      </form>
+
+      <footer class="card-footer">
+        ¿Ya tienes una cuenta? <a routerLink="/login">Inicia sesión</a>
+      </footer>
+
+    </div>
+  </main>
+
+  <!-- Bottom footer -->
+  <footer class="page-footer">
+    <span>Privacidad</span>
+    <span>Términos de servicio</span>
+    <span class="footer-copy">© 2024 KROOT. Todos los derechos reservados.</span>
+  </footer>
+
+</div>

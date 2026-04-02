@@ -1,0 +1,456 @@
+/* ─────────────────────────────────────────────
+   Register Component — KROOT Multi-Step Design
+   ───────────────────────────────────────────── */
+
+:host {
+  --primary:           #002B5B;
+  --primary-hover:     #003d82;
+  --accent:            #50C878;
+  --accent-dark:       #3aaf61;
+  --error:             #BA1A1A;
+  --warn:              #F59E0B;
+  --surface:           #F4F6F9;
+  --card-bg:           #ffffff;
+  --on-surface:        #191C1E;
+  --on-surface-sub:    #5A6272;
+  --border:            #E2E8F0;
+  --border-focus:      #002B5B;
+
+  --radius-card:       16px;
+  --radius-btn:        10px;
+  --radius-field:      10px;
+
+  --font-body: 'DM Sans', 'Segoe UI', sans-serif;
+  --font-brand: 'Manrope', 'Segoe UI', sans-serif;
+}
+
+/* ── Page shell ─────────────────────────────── */
+
+.register-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: var(--surface);
+  font-family: var(--font-body);
+}
+
+/* ── Top nav ────────────────────────────────── */
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2rem;
+  height: 56px;
+  background: var(--primary);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.06);
+
+  .nav-logo {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(0) invert(1); // Hace el logo blanco sobre fondo oscuro
+  }
+
+  .nav-brand-text {
+    font-family: var(--font-brand);
+    font-size: 20px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.4px;
+  }
+
+  .nav-help {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+    &:hover { background: rgba(255,255,255,0.12); }
+  }
+}
+
+/* ── Main area ──────────────────────────────── */
+
+.register-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+}
+
+/* ── Card ───────────────────────────────────── */
+
+.register-card {
+  width: 100%;
+  max-width: 480px;
+  background: var(--card-bg);
+  border-radius: var(--radius-card);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 24px -4px rgba(0, 43, 91, 0.10);
+  padding: 2rem 2.25rem 1.75rem;
+  overflow: hidden;
+}
+
+/* ── Step header ────────────────────────────── */
+
+.step-header {
+  margin-bottom: 1.75rem;
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    color: var(--accent-dark);
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+  }
+
+  .step-title {
+    font-family: var(--font-brand);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--on-surface);
+    margin: 0 0 14px 0;
+    letter-spacing: -0.4px;
+  }
+}
+
+/* ── Progress bar ───────────────────────────── */
+
+.progress-bar {
+  height: 4px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-dark), var(--accent));
+    border-radius: 4px;
+    transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+/* ── Form body ──────────────────────────────── */
+
+.form-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.step-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Doc row (tipo + número) ────────────────── */
+
+.doc-row {
+  display: grid;
+  grid-template-columns: 1.1fr 2fr;
+  gap: 10px;
+}
+
+/* ── Fields ─────────────────────────────────── */
+
+.field-full {
+  width: 100%;
+}
+
+/* ── Password strength ──────────────────────── */
+
+.password-field {
+  display: flex;
+  flex-direction: column;
+
+  .field-full { margin-bottom: 0 !important; }
+}
+
+.strength-meter {
+  margin-top: -14px;
+  margin-bottom: 12px;
+  padding: 0 2px;
+
+  .strength-bars {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 5px;
+  }
+
+  .bar {
+    height: 3px;
+    flex: 1;
+    background: var(--border);
+    border-radius: 2px;
+    transition: background 0.3s ease;
+
+    &.active.weak   { background: var(--error); }
+    &.active.medium { background: var(--warn); }
+    &.active.strong { background: var(--accent-dark); }
+  }
+
+  .strength-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .strength-label {
+      font-size: 11px;
+      font-weight: 600;
+      &.weak-text   { color: var(--error); }
+      &.medium-text { color: var(--warn); }
+      &.strong-text { color: var(--accent-dark); }
+    }
+
+    .strength-hint {
+      font-size: 11px;
+      color: var(--on-surface-sub);
+    }
+  }
+}
+
+/* ── Step actions ───────────────────────────── */
+
+.step-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 1.25rem;
+}
+
+.btn-next {
+  width: 100%;
+  height: 48px;
+  border-radius: var(--radius-btn);
+  background-color: var(--primary) !important;
+  color: #fff !important;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.2s, transform 0.15s;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+
+  &:hover:not([disabled]) {
+    background-color: var(--primary-hover) !important;
+    transform: translateY(-1px);
+  }
+
+  &[disabled] { opacity: 0.6; cursor: not-allowed; }
+
+  mat-spinner { --mdc-circular-progress-active-indicator-color: #fff; }
+}
+
+.btn-back {
+  width: 100%;
+  height: 42px;
+  border-radius: var(--radius-btn);
+  border-color: var(--border) !important;
+  color: var(--on-surface-sub) !important;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: border-color 0.2s, background 0.2s;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+  &:hover { background: rgba(0,0,0,0.03) !important; border-color: #c0c8d4 !important; }
+}
+
+/* ── Divider ────────────────────────────────── */
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 1.25rem 0 1rem;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--border);
+  }
+
+  span {
+    padding: 0 0.9rem;
+    font-size: 11px;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+}
+
+/* ── Google button ──────────────────────────── */
+
+.google-btn {
+  width: 100%;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-btn);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface);
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+
+  img { width: 18px; height: 18px; }
+
+  &:hover {
+    background: #f8fafc;
+    border-color: #c8d2de;
+    box-shadow: 0 2px 8px -2px rgba(0,0,0,0.08);
+  }
+}
+
+/* ── Confirmation summary ───────────────────── */
+
+.confirm-summary {
+  text-align: center;
+  padding: 0.5rem 0 1rem;
+
+  .summary-icon {
+    margin: 0 auto 1rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #E8F8EE;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    mat-icon {
+      font-size: 30px;
+      width: 30px;
+      height: 30px;
+      color: var(--accent-dark);
+    }
+  }
+
+  .summary-heading {
+    font-family: var(--font-brand);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--on-surface);
+    margin: 0 0 4px;
+  }
+
+  .summary-sub {
+    font-size: 13px;
+    color: var(--on-surface-sub);
+    margin: 0 0 1.5rem;
+  }
+
+  .summary-items {
+    text-align: left;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    border-bottom: 1px solid var(--border);
+
+    &:last-child { border-bottom: none; }
+
+    .summary-key {
+      color: var(--on-surface-sub);
+      font-weight: 500;
+      flex-shrink: 0;
+      margin-right: 1rem;
+    }
+
+    .summary-val {
+      color: var(--on-surface);
+      font-weight: 600;
+      text-align: right;
+      word-break: break-all;
+    }
+  }
+}
+
+/* ── Card footer ────────────────────────────── */
+
+.card-footer {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 13px;
+  color: var(--on-surface-sub);
+
+  a {
+    color: var(--accent-dark);
+    font-weight: 700;
+    text-decoration: none;
+    margin-left: 4px;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+/* ── Bottom page footer ─────────────────────── */
+
+.page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 1.1rem 2rem;
+  font-size: 12px;
+  color: #94a3b8;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+
+  .footer-copy { margin-left: auto; }
+
+  @media (max-width: 500px) { .footer-copy { margin-left: 0; } }
+}
+
+/* ── Material overrides ─────────────────────── */
+
+::ng-deep {
+  .mat-mdc-form-field {
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .mdc-text-field--outlined {
+    --mdc-outlined-text-field-container-shape: var(--radius-field);
+    --mdc-outlined-text-field-focus-outline-color: var(--primary);
+    --mdc-outlined-text-field-hover-outline-color: var(--primary);
+    --mdc-outlined-text-field-label-text-size: 14px;
+  }
+
+  .mat-mdc-form-field-subscript-wrapper {
+    padding: 0 4px;
+  }
+}
+
+.nav-logo {
+  cursor: pointer;
+}

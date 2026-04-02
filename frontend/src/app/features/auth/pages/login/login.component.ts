@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router'; // <-- IMPORTACIÓN DEL ENRUTADOR
+import { Router,RouterLink } from '@angular/router'; // <-- IMPORTACIÓN DEL ENRUTADOR
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
@@ -20,6 +20,7 @@ import { AuthService } from '../../services/auth.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    RouterLink,
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
@@ -99,5 +100,9 @@ export class LoginComponent {
     } else {
       this.loginForm.markAllAsTouched();
     }
+  }
+  // NAVEGACIÓN HACIA EL REGISTRO
+  goToRegister() {
+    this.router.navigate(['/register']);
   }
 }
