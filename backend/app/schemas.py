@@ -1,17 +1,18 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
+from datetime import datetime
 
 # MODELOS DE PETICIÓN (Entrada desde Angular)
 class LoginRequest(BaseModel):
-    email: EmailStr          # Valida formato de correo automáticamente
-    password: str            # Contraseña del formulario
-    rememberMe: bool = False # Casilla de mantener sesión
+    email: EmailStr          
+    password: str            
+    rememberMe: bool = False 
 
 # MODELOS DE RESPUESTA (Salida hacia Angular)
 class Token(BaseModel):
-    access_token: str        # Token JWT para autenticación
-    refresh_token: str       # Llave maestra para renovar sesión
-    token_type: str          # Tipo de token (ej. "bearer")
+    access_token: str        
+    refresh_token: str       
+    token_type: str          
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -19,12 +20,15 @@ class TokenData(BaseModel):
 # MODELOS PARA CREACIÓN Y LECTURA DE USUARIOS
 class UserCreate(BaseModel):
     email: EmailStr
-    password: str
+    # NUEVO: Validación estricta de 8 caracteres
+    password: str = Field(..., min_length=8, description="La contraseña debe tener al menos 8 caracteres")
 
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
     is_active: bool
+    is_verified: bool 
+    created_at: datetime  
 
     class Config:
-        from_attributes = True # Permite a Pydantic leer modelos de SQLAlchemy
+        from_attributes = True

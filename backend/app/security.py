@@ -45,3 +45,13 @@ def create_refresh_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire, "type": "refresh"}) # Etiqueta interna para diferenciarlo
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+# CREACIÓN DE TOKEN DE VERIFICACIÓN DE CORREO (Duración larga)
+def create_email_verification_token(email: str):
+    # El token expira en 24 horas
+    expire = datetime.utcnow() + timedelta(hours=24)
+    # Le ponemos un tipo específico para distinguirlo de un login
+    to_encode = {"sub": email, "type": "email_verification", "exp": expire}
+    
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt

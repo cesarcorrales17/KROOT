@@ -24,6 +24,12 @@ export class AuthService {
     );
   }
 
+  // --- NUEVO: Registro de usuario ---
+  register(userData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/register`, userData);
+  }
+  // ----------------------------------
+
   // Petición silenciosa para renovar tokens
   refreshToken(): Observable<any> {
     const refresh = localStorage.getItem('refresh_token');

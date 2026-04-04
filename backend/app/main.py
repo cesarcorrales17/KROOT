@@ -9,7 +9,8 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-from app import models, schemas, security
+# AÑADIDO: Importamos el nuevo servicio de emails (Asegúrate de crearlo en la carpeta app)
+from app import models, schemas, security, email_service
 from app.database import engine, get_db
 
 # Inicialización de base de datos
@@ -46,25 +47,70 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def health_check():
     return {"status": "ok", "message": "Backend operativo al 100%"}
 
-@app.post("/usuarios", response_model=schemas.UserResponse)
-def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+# NUEVO ENDPOINT DE REGISTRO ACTUALIZADO CON ENVÍO DE CORREO
+@app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute") # Protegemos también la creación de cuentas
+def register_user(request: Request, user: schemas.UserCreate, db: Session = Depends(get_db)):
+    
+    # 1. Verificar si el correo ya existe
     db_user = db.query(models.User).filter(models.User.email == user.email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="El correo ya está registrado")
     
+    # 2. Encriptar contraseña
     hashed_password = security.get_password_hash(user.password)
+    
+    # 3. Crear usuario (is_verified se pone en False por defecto gracias al modelo)
     new_user = models.User(email=user.email, hashed_password=hashed_password)
     
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+    
+    # --- 4. NUEVA LÓGICA DE CORREO ---
+    # Generamos el token de verificación
+    verification_token = security.create_email_verification_token(email=new_user.email)
+    
+    # Enviamos el correo simulado (Se imprimirá en la consola)
+    email_service.send_verification_email(email=new_user.email, token=verification_token)
+    # ---------------------------------
+    
     return new_user
+
+# NUEVO ENDPOINT PARA VERIFICAR EL CORREO TRAS EL CLIC
+@app.get("/verify-email")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    try:
+        # Desencriptamos el token usando tu configuración de seguridad
+        payload = jwt.decode(token, security.SECRET_KEY, algorithms=[security.ALGORITHM])
+        email: str = payload.get("sub")
+        token_type: str = payload.get("type")
+        
+        # Validamos que sea específicamente un token de verificación de correo
+        if email is None or token_type != "email_verification":
+            raise HTTPException(status_code=400, detail="Token inválido")
+            
+    except JWTError:
+        raise HTTPException(status_code=400, detail="El enlace de verificación es inválido o ha expirado")
+        
+    # Buscamos al usuario
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+        
+    # Verificamos si ya había activado la cuenta
+    if user.is_verified:
+        return {"message": "La cuenta ya había sido verificada anteriormente."}
+        
+    # Activamos la cuenta
+    user.is_verified = True
+    db.commit()
+    
+    return {"message": "¡Tu cuenta ha sido verificada con éxito! Ya puedes iniciar sesión."}
 
 # Autenticación y login (Protegido por Rate Limit: 10 peticiones por minuto)
 @app.post("/login", response_model=schemas.Token)
 @limiter.limit("10/minute") # <-- EL ESCUDO DE RED
-@app.post("/login", response_model=schemas.Token)
-@limiter.limit("10/minute")
 def login(request: Request, user_credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
     # Capturamos la IP del usuario de forma silenciosa
     client_ip = request.client.host
