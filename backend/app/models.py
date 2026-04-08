@@ -20,6 +20,9 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     is_setup_completed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relación uno a uno con Business (un usuario tiene una empresa, una empresa pertenece a un usuario)
+    business = relationship("Business", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
 # TABLA PARA TOKENS DE RECUPERACIÓN DE CONTRASEÑA
 class PasswordResetToken(Base):
@@ -35,3 +38,31 @@ class PasswordResetToken(Base):
 
     # Relación para poder consultar user.password_reset_tokens fácilmente
     user = relationship("User")
+    
+# NUEVO: TABLA DE CONFIGURACIÓN DE LA EMPRESA (WIZARD)
+class Business(Base):
+    __tablename__ = "business"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("usuarios.id", ondelete="CASCADE"), unique=True, nullable=False)
+    
+    # Paso 1 - Información básica
+    business_name = Column(String, nullable=True)
+    business_type = Column(String, nullable=True)
+    
+    # Paso 2 - Información financiera
+    industry = Column(String, nullable=True)
+    
+    # Paso 3 - Estimaciones financieras
+    estimated_income = Column(Integer, nullable=True) # Usamos Integer para simplificar, o Float si prefieres decimales
+    estimated_expenses = Column(Integer, nullable=True)
+    
+    # Paso 4 - Configuración de seguimiento
+    tracking_frequency = Column(String, nullable=True)
+    
+    # Control del Wizard 
+    onboarding_completed = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) # Se actualiza solo en cada "auto-guardado"
+
+    user = relationship("User", back_populates="business")

@@ -1,0 +1,181 @@
+// Variables de marca (Alineadas a tus otras pantallas)
+$primary-color: #001736;
+$text-main: #191c1e;
+$text-muted: #64748b;
+$bg-color: #f7f9fb;
+$border-color: #e0e3e5;
+
+.setup-page {
+  min-height: 100vh;
+  background-color: $bg-color;
+  font-family: "Inter", sans-serif;
+  display: flex;
+  flex-direction: column;
+
+  .top-nav {
+    width: 100%;
+    padding: 24px 48px;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+
+    .nav-logo {
+      height: 32px;
+      object-fit: contain;
+    }
+  }
+
+  .setup-main {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; // Empieza más arriba, no centrado exacto
+    padding: 0 24px 64px 24px;
+  }
+
+  .setup-card {
+    width: 100%;
+    max-width: 700px;
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 48px;
+    box-shadow: 0 10px 30px rgba(0, 23, 54, 0.05);
+    border: 1px solid $border-color;
+  }
+
+  .step-header {
+    text-align: center;
+    margin-bottom: 40px;
+
+    .step-title {
+      font-family: "Manrope", sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: $primary-color;
+      margin: 0 0 12px 0;
+    }
+
+    .step-subtitle {
+      color: $text-muted;
+      font-size: 15px;
+      line-height: 1.5;
+      margin: 0;
+
+      strong {
+        color: $text-main;
+      }
+    }
+  }
+
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 0;
+    color: $text-muted;
+
+    mat-spinner {
+      margin-bottom: 16px;
+    }
+  }
+
+  // Estructura interna de los pasos
+  .step-body {
+    padding: 24px 0;
+    min-height: 200px;
+
+    .micro-copy {
+      font-size: 14px;
+      color: $text-muted;
+      margin-bottom: 24px;
+      background: #f8fafc;
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 3px solid $primary-color;
+    }
+
+    .full-width {
+      width: 100%;
+      margin-bottom: 16px;
+    }
+  }
+
+  // Acciones (Botones)
+  .step-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 24px;
+    border-top: 1px solid $border-color;
+    margin-top: 16px;
+
+    &.dual-actions {
+      justify-content: space-between;
+    }
+
+    .right-actions {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .btn-primary,
+    .btn-finish {
+      background-color: $primary-color;
+      color: white;
+      padding: 24px 32px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+    }
+
+    .btn-finish {
+      background-color: #006d36; // Un verde para indicar éxito final
+    }
+
+    .btn-secondary {
+      border-color: $border-color;
+      color: $text-main;
+      padding: 24px 24px;
+      border-radius: 8px;
+    }
+
+    .btn-text {
+      color: $text-muted;
+    }
+  }
+
+  // Resumen Final
+  .summary-box {
+    display: flex;
+    align-items: center;
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 24px;
+    border: 1px solid #c8e6c9;
+  }
+}
+
+// Sobrescribir estilos genéricos de Material Stepper
+::ng-deep {
+  .kroot-stepper {
+    background: transparent;
+
+    .mat-step-header {
+      pointer-events: none; // Evita que den clic a los pasos futuros libremente
+
+      .mat-step-icon {
+        background-color: $border-color;
+        color: $text-muted;
+
+        &.mat-step-icon-selected,
+        &.mat-step-icon-state-edit {
+          background-color: $primary-color;
+          color: white;
+        }
+      }
+    }
+  }
+}

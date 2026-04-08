@@ -1,1 +1,253 @@
-<p>company-setup works!</p>
+<div class="setup-page">
+  <nav class="top-nav">
+    <div class="nav-brand">
+      <img
+        src="assets/logo/logoregister.png"
+        alt="Kroot Logo"
+        class="nav-logo"
+      />
+    </div>
+  </nav>
+
+  <main class="setup-main">
+    <div class="setup-card">
+      <div class="step-header">
+        <h2 class="step-title">Configura tu espacio de trabajo</h2>
+        <p class="step-subtitle">
+          Completa estos datos básicos para que Kroot pueda analizar tu negocio
+          correctamente.
+          <br /><strong>Tu progreso se guardará automáticamente.</strong>
+        </p>
+      </div>
+
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando tu progreso...</p>
+      </div>
+
+      <mat-stepper
+        [linear]="false"
+        #stepper
+        *ngIf="!isLoading"
+        class="kroot-stepper"
+        [animationDuration]="'500ms'"
+      >
+        <mat-step [stepControl]="step1Form">
+          <form [formGroup]="step1Form">
+            <ng-template matStepLabel>El Negocio</ng-template>
+
+            <div class="step-body">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Nombre de tu empresa o negocio</mat-label>
+                <input
+                  matInput
+                  formControlName="business_name"
+                  placeholder="Ej. Mi Agencia S.A.S"
+                />
+                <mat-icon matPrefix>business</mat-icon>
+                <mat-error
+                  *ngIf="step1Form.get('business_name')?.hasError('required')"
+                  >El nombre es obligatorio</mat-error
+                >
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Tipo de estructura</mat-label>
+                <mat-select formControlName="business_type">
+                  <mat-option value="independiente"
+                    >Profesional Independiente / Freelance</mat-option
+                  >
+                  <mat-option value="pyme"
+                    >PYME (Pequeña o Mediana Empresa)</mat-option
+                  >
+                  <mat-option value="corporacion"
+                    >Corporación / Gran Empresa</mat-option
+                  >
+                </mat-select>
+                <mat-icon matPrefix>category</mat-icon>
+                <mat-error
+                  *ngIf="step1Form.get('business_type')?.hasError('required')"
+                  >Selecciona un tipo</mat-error
+                >
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions">
+              <button
+                mat-flat-button
+                class="btn-primary"
+                matStepperNext
+                (click)="saveStep(step1Form)"
+                [disabled]="isSaving || step1Form.invalid"
+              >
+                <span *ngIf="!isSaving">Siguiente</span>
+                <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <mat-step [stepControl]="step2Form">
+          <form [formGroup]="step2Form">
+            <ng-template matStepLabel>Industria</ng-template>
+
+            <div class="step-body">
+              <p class="micro-copy">
+                Saber tu industria nos ayuda a compararte con el mercado.
+              </p>
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Sector o Industria</mat-label>
+                <mat-select formControlName="industry">
+                  <mat-option value="tecnologia"
+                    >Tecnología y Software</mat-option
+                  >
+                  <mat-option value="comercio"
+                    >Comercio Minorista / Retail</mat-option
+                  >
+                  <mat-option value="servicios"
+                    >Servicios Profesionales</mat-option
+                  >
+                  <mat-option value="salud">Salud y Bienestar</mat-option>
+                  <mat-option value="manufactura">Manufactura</mat-option>
+                  <mat-option value="otro">Otro</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>store</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions dual-actions">
+              <button
+                mat-stroked-button
+                matStepperPrevious
+                class="btn-secondary"
+              >
+                Atrás
+              </button>
+              <button
+                mat-flat-button
+                class="btn-primary"
+                matStepperNext
+                (click)="saveStep(step2Form)"
+                [disabled]="isSaving || step2Form.invalid"
+              >
+                <span *ngIf="!isSaving">Siguiente</span>
+                <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+
+        <mat-step [stepControl]="step3Form">
+          <form [formGroup]="step3Form">
+            <ng-template matStepLabel>Finanzas</ng-template>
+
+            <div class="step-body">
+              <p class="micro-copy">
+                Datos aproximados para inicializar tus indicadores. (Puedes
+                saltar esto y llenarlo luego).
+              </p>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Ingresos mensuales estimados ($)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="estimated_income"
+                  placeholder="Ej. 5000"
+                />
+                <mat-icon matPrefix>trending_up</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Gastos mensuales estimados ($)</mat-label>
+                <input
+                  matInput
+                  type="number"
+                  formControlName="estimated_expenses"
+                  placeholder="Ej. 3000"
+                />
+                <mat-icon matPrefix>trending_down</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <div class="step-actions dual-actions">
+              <button
+                mat-stroked-button
+                matStepperPrevious
+                class="btn-secondary"
+              >
+                Atrás
+              </button>
+              <div class="right-actions">
+                <button mat-button matStepperNext class="btn-text">
+                  Saltar
+                </button>
+                <button
+                  mat-flat-button
+                  class="btn-primary"
+                  matStepperNext
+                  (click)="saveStep(step3Form)"
+                  [disabled]="isSaving"
+                >
+                  <span *ngIf="!isSaving">Siguiente</span>
+                  <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+                </button>
+              </div>
+            </div>
+          </form>
+        </mat-step>
+
+        <mat-step [stepControl]="step4Form">
+          <form [formGroup]="step4Form">
+            <ng-template matStepLabel>Frecuencia</ng-template>
+
+            <div class="step-body">
+              <p class="micro-copy">
+                ¿Con qué frecuencia planeas registrar tus movimientos en Kroot?
+              </p>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Frecuencia de seguimiento</mat-label>
+                <mat-select formControlName="tracking_frequency">
+                  <mat-option value="diario">Diario</mat-option>
+                  <mat-option value="semanal">Semanal</mat-option>
+                  <mat-option value="mensual">Mensual</mat-option>
+                </mat-select>
+                <mat-icon matPrefix>event</mat-icon>
+              </mat-form-field>
+
+              <div class="summary-box">
+                <mat-icon style="color: #006d36; margin-right: 8px"
+                  >check_circle</mat-icon
+                >
+                <span
+                  >Al finalizar, procesaremos estos datos y prepararemos tu
+                  Dashboard.</span
+                >
+              </div>
+            </div>
+
+            <div class="step-actions dual-actions">
+              <button
+                mat-stroked-button
+                matStepperPrevious
+                class="btn-secondary"
+              >
+                Atrás
+              </button>
+              <button
+                mat-flat-button
+                class="btn-finish"
+                (click)="saveStep(step4Form, true)"
+                [disabled]="isSaving || step4Form.invalid"
+              >
+                <span *ngIf="!isSaving">Finalizar y entrar a Kroot</span>
+                <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+              </button>
+            </div>
+          </form>
+        </mat-step>
+      </mat-stepper>
+    </div>
+  </main>
+</div>

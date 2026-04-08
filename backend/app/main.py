@@ -271,6 +271,7 @@ from pydantic import BaseModel
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
 
+# Endpoint para renovar tokens usando el refresh token
 @app.post("/refresh", response_model=schemas.Token)
 def refresh_session(request_data: RefreshTokenRequest, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -306,3 +307,57 @@ def refresh_session(request_data: RefreshTokenRequest, db: Session = Depends(get
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
     }
+    
+# WIZARD DE CONFIGURACIÓN DE EMPRESA
+@app.get("/business/setup", response_model=schemas.BusinessResponse)
+def get_business_setup(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user) # Asegúrate de usar la dependencia que obtiene tu usuario actual
+):
+    """
+    Devuelve la configuración actual de la empresa. 
+    Ideal para recargar los datos si el usuario cerró la pestaña a la mitad del wizard.
+    """
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Aún no hay configuración de empresa para este usuario")
+        
+    return business
+
+# Endpoint de guardado automático (Upsert) para el wizard de configuración de la empresa
+@app.patch("/business/setup", response_model=schemas.BusinessResponse)
+def update_business_setup(
+    setup_data: schemas.BusinessSetupPartial, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Endpoint de guardado automático (Upsert). Crea el registro si no existe, 
+    o actualiza solo los campos enviados si ya existe.
+    """
+    # 1. Buscamos si ya existe un registro para esta empresa
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    
+    # 2. Si no existe, lo creamos vacío y lo asociamos al usuario
+    if not business:
+        business = models.Business(user_id=current_user.id)
+        db.add(business)
+        # No hacemos commit aún, primero le inyectamos los datos del Frontend
+        
+    # 3. Extraemos solo los datos que Angular nos envió en este paso específico (excluyendo nulos/vacíos)
+    update_data = setup_data.model_dump(exclude_unset=True)
+    
+    # 4. Actualizamos el modelo dinámicamente
+    for key, value in update_data.items():
+        setattr(business, key, value)
+        
+    # 5. REGLA DE NEGOCIO CRÍTICA: Si el frontend avisa que el wizard terminó
+    if setup_data.onboarding_completed:
+        current_user.is_setup_completed = True
+        
+    db.commit()
+    db.refresh(business)
+    db.refresh(current_user) # Refrescamos el usuario por si cambió su estado
+    
+    return business

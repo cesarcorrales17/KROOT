@@ -34,7 +34,7 @@ class UserCreate(BaseModel):
             raise ValueError('La contraseña debe contener al menos un carácter especial')
         return v
 
-# NUEVO: MODELOS PARA RECUPERACIÓN DE CONTRASEÑA
+# MODELOS PARA RECUPERACIÓN DE CONTRASEÑA
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
@@ -61,6 +61,33 @@ class UserResponse(BaseModel):
     is_active: bool
     is_verified: bool 
     created_at: datetime  
+
+    class Config:
+        from_attributes = True
+        
+
+# WIZARD DE CONFIGURACIÓN DE LA EMPRESA
+# Esquema para el "Guardado Automático" (Todos los campos son opcionales)
+class BusinessSetupPartial(BaseModel):
+    business_name: Optional[str] = None
+    business_type: Optional[str] = None
+    industry: Optional[str] = None
+    estimated_income: Optional[int] = None
+    estimated_expenses: Optional[int] = None
+    tracking_frequency: Optional[str] = None
+    onboarding_completed: Optional[bool] = False
+
+# Esquema de respuesta para enviarle a Angular cuando vuelva a entrar
+class BusinessResponse(BaseModel):
+    id: int
+    user_id: int
+    business_name: Optional[str] = None
+    business_type: Optional[str] = None
+    industry: Optional[str] = None
+    estimated_income: Optional[int] = None
+    estimated_expenses: Optional[int] = None
+    tracking_frequency: Optional[str] = None
+    onboarding_completed: bool
 
     class Config:
         from_attributes = True

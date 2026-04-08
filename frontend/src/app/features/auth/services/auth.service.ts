@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
+import { HttpHeaders } from '@angular/common/http';
 
 @Injectable({
   providedIn: 'root',
@@ -68,5 +69,30 @@ export class AuthService {
     localStorage.removeItem('auth_token');
     localStorage.removeItem('refresh_token');
     this.router.navigate(['/login']);
+  }
+
+  // WIZARD DE EMPRESA (ONBOARDING)
+
+  // Función de apoyo para obtener el token
+  private getHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return { headers: new HttpHeaders({ Authorization: `Bearer ${token}` }) };
+  }
+
+  // Obtener progreso guardado
+  getBusinessSetup(): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/business/setup`,
+      this.getHeaders(),
+    );
+  }
+
+  // Guardado automático (Upsert)
+  updateBusinessSetup(data: any): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/business/setup`,
+      data,
+      this.getHeaders(),
+    );
   }
 }
