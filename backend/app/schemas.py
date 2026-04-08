@@ -1,4 +1,5 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+import re
 from typing import Optional
 from datetime import datetime
 
@@ -17,12 +18,23 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
-# MODELOS PARA CREACIÓN Y LECTURA DE USUARIOS
+# MODELOS DE USUARIO
 class UserCreate(BaseModel):
     email: EmailStr
-    # NUEVO: Validación estricta de 8 caracteres
-    password: str = Field(..., min_length=8, description="La contraseña debe tener al menos 8 caracteres")
+    password: str = Field(..., min_length=8)
 
+    @field_validator('password')
+    @classmethod
+    def validate_password_strength(cls, v):
+        if not re.search(r'[A-Z]', v):
+            raise ValueError('La contraseña debe contener al menos una letra mayúscula')
+        if not re.search(r'[0-9]', v):
+            raise ValueError('La contraseña debe contener al menos un número')
+        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', v):
+            raise ValueError('La contraseña debe contener al menos un carácter especial')
+        return v
+
+# MODELO DE RESPUESTA DE USUARIO
 class UserResponse(BaseModel):
     id: int
     email: EmailStr

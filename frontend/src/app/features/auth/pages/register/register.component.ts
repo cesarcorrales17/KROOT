@@ -7,7 +7,7 @@ import {
   FormGroup,
   Validators,
   AbstractControl,
-  ValidationErrors
+  ValidationErrors,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 
@@ -29,7 +29,7 @@ import {
   style,
   animate,
   query,
-  animateChild
+  animateChild,
 } from '@angular/animations';
 
 // CONFIGURACIÓN DEL COMPONENTE Y ANIMACIONES
@@ -45,7 +45,7 @@ import {
     MatIconModule,
     MatButtonModule,
     MatSelectModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
   ],
   templateUrl: './register.component.html',
   styleUrl: './register.component.scss',
@@ -56,9 +56,9 @@ import {
         style({ opacity: 0, transform: 'translateY(24px)' }),
         animate(
           '0.55s cubic-bezier(0.16, 1, 0.3, 1)',
-          style({ opacity: 1, transform: 'translateY(0)' })
-        )
-      ])
+          style({ opacity: 1, transform: 'translateY(0)' }),
+        ),
+      ]),
     ]),
     // ANIMACIÓN DE TRANSICIÓN ENTRE PASOS DEL WIZARD
     trigger('stepFade', [
@@ -66,20 +66,19 @@ import {
         style({ opacity: 0, transform: 'translateX(16px)' }),
         animate(
           '0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-          style({ opacity: 1, transform: 'translateX(0)' })
-        )
+          style({ opacity: 1, transform: 'translateX(0)' }),
+        ),
       ]),
       transition(':leave', [
         animate(
           '0.2s ease-in',
-          style({ opacity: 0, transform: 'translateX(-16px)' })
-        )
-      ])
-    ])
-  ]
+          style({ opacity: 0, transform: 'translateX(-16px)' }),
+        ),
+      ]),
+    ]),
+  ],
 })
 export class RegisterComponent {
-
   // ESTADO DE LA INTERFAZ
   registerForm: FormGroup;
   isLoading = false;
@@ -98,8 +97,8 @@ export class RegisterComponent {
   // CAMPOS QUE PERTENECEN A CADA PASO — USADOS PARA VALIDAR ANTES DE AVANZAR
   private readonly stepFields: string[][] = [
     ['email', 'confirmEmail', 'password', 'confirmPassword'], // Paso 1
-    ['documentType', 'documentNumber', 'fullName'],           // Paso 2
-    []                                                        // Paso 3 — solo revisión
+    ['documentType', 'documentNumber', 'fullName'], // Paso 2
+    [], // Paso 3 — solo revisión
   ];
 
   // INYECCIÓN DE DEPENDENCIAS
@@ -118,16 +117,19 @@ export class RegisterComponent {
         confirmPassword: ['', Validators.required],
         // Campos del Paso 2
         documentType: ['', Validators.required],
-        documentNumber: ['', [Validators.required, Validators.pattern('^[0-9]*$')]],
-        fullName: ['', [Validators.required, Validators.minLength(3)]]
+        documentNumber: [
+          '',
+          [Validators.required, Validators.pattern('^[0-9]*$')],
+        ],
+        fullName: ['', [Validators.required, Validators.minLength(3)]],
       },
       {
         // VALIDADORES A NIVEL DE GRUPO — COMPRUEBAN QUE LOS PARES COINCIDAN
         validators: [
           this.matchValidator('email', 'confirmEmail'),
-          this.matchValidator('password', 'confirmPassword')
-        ]
-      }
+          this.matchValidator('password', 'confirmPassword'),
+        ],
+      },
     );
   }
 
@@ -160,21 +162,26 @@ export class RegisterComponent {
 
   // DEVUELVE LA ETIQUETA TEXTUAL DE LA FORTALEZA PARA MOSTRAR EN EL HTML
   get strengthLabel(): string {
-    const labels = ['', 'Contraseña débil', 'Contraseña regular', 'Contraseña fuerte'];
+    const labels = [
+      '',
+      'Contraseña débil',
+      'Contraseña regular',
+      'Contraseña fuerte',
+    ];
     return labels[this.passwordStrength] ?? '';
   }
 
   // VERIFICA SI TODOS LOS CAMPOS DEL PASO ACTUAL SON VÁLIDOS
   isCurrentStepValid(): boolean {
     const fields = this.stepFields[this.currentStep - 1];
-    return fields.every(f => this.registerForm.get(f)?.valid);
+    return fields.every((f) => this.registerForm.get(f)?.valid);
   }
 
   // AVANZA AL SIGUIENTE PASO — SI HAY ERRORES, LOS MARCA COMO TOCADOS PARA MOSTRARLOS
   nextStep(): void {
     if (!this.isCurrentStepValid()) {
-      this.stepFields[this.currentStep - 1].forEach(f =>
-        this.registerForm.get(f)?.markAsTouched()
+      this.stepFields[this.currentStep - 1].forEach((f) =>
+        this.registerForm.get(f)?.markAsTouched(),
       );
       return;
     }
@@ -200,29 +207,39 @@ export class RegisterComponent {
       // FASTAPI SOLO NECESITA EMAIL Y PASSWORD — DESCARTAMOS LAS CONFIRMACIONES
       const userData = {
         email: this.registerForm.get('email')?.value,
-        password: this.registerForm.get('password')?.value
+        password: this.registerForm.get('password')?.value,
       };
 
       this.authService.register(userData).subscribe({
         next: (response) => {
           this.isLoading = false;
           // ÉXITO — MOSTRAMOS EL MENSAJE PARA QUE EL USUARIO REVISE SU CORREO
-          this.successMessage = '¡Cuenta creada con éxito! Hemos enviado un correo de verificación a tu bandeja de entrada.';
+          this.successMessage =
+            '¡Cuenta creada con éxito! Hemos enviado un correo de verificación a tu bandeja de entrada.';
           // Opcional: resetear el formulario tras el registro exitoso
           // this.registerForm.reset();
         },
         error: (err) => {
           this.isLoading = false;
 
-          // ERROR 400: CORREO DUPLICADO — LO ENVIAMOS DE VUELTA AL PASO 1
-          if (err.status === 400) {
-            this.errorMessage = err.error.detail || 'Este correo electrónico ya está registrado.';
+          // ERROR DE VALIDACIÓN DE CONTRASEÑA — FASTAPI DEVUELVE 422 SI NO CUMPLE LOS REQUISITOS
+          if (err.status === 422) {
+            this.errorMessage =
+              'La contraseña debe incluir mayúsculas, números y caracteres especiales.';
             this.currentStep = 1;
-          } else {
-            // ERROR GENÉRICO — SERVIDOR CAÍDO O SIN CONEXIÓN
-            this.errorMessage = 'Ocurrió un error en el servidor. Inténtalo más tarde.';
           }
-        }
+          // ERROR DE CORREO YA REGISTRADO — FASTAPI DEVUELVE 400 SI EL EMAIL YA EXISTE EN LA BASE DE DATOS
+          else if (err.status === 400) {
+            this.errorMessage =
+              err.error.detail || 'Este correo electrónico ya está registrado.';
+            this.currentStep = 1;
+          }
+          // ERROR GENERICO — CUALQUIER OTRO ERROR QUE NO HAYA SIDO MANEJADO ES PROBABLEMENTE UN PROBLEMA EN EL SERVIDOR
+          else {
+            this.errorMessage =
+              'Ocurrió un error en el servidor. Inténtalo más tarde.';
+          }
+        },
       });
     }
   }
