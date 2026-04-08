@@ -4,6 +4,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+import uuid
 
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -167,7 +168,71 @@ def login(request: Request, user_credentials: schemas.LoginRequest, db: Session 
         "token_type": "bearer",
         "is_setup_completed": user.is_setup_completed
     }
+@app.post("/forgot-password")
+@limiter.limit("3/minute") # Rate limit estricto para evitar spam masivo de correos
+def forgot_password(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
+    # 1. Buscamos al usuario de forma silenciosa
+    user = db.query(models.User).filter(models.User.email == body.email).first()
+    
+    if user:
+        # 2. Generamos un UUID seguro y único
+        reset_token = uuid.uuid4().hex
+        # 3. Expiración estricta de 30 minutos
+        expiration = datetime.utcnow() + timedelta(minutes=30)
+        
+        # 4. Guardamos el token en la base de datos
+        db_token = models.PasswordResetToken(
+            user_id=user.id,
+            token=reset_token,
+            expires_at=expiration
+        )
+        db.add(db_token)
+        db.commit()
+        
+        # 5. Enviamos el correo
+        email_service.send_password_reset_email(email=user.email, token=reset_token)
+    
+    # 6. SEGURIDAD: Respondemos siempre lo mismo, exista o no el correo (Anti-enumeración)
+    return {"message": "Si el correo está registrado en Kroot, recibirás un enlace de recuperación en los próximos minutos."}
 
+@app.post("/reset-password")
+@limiter.limit("5/minute")
+def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
+    # 1. Buscar el token en la base de datos verificando 3 condiciones críticas:
+    db_token = db.query(models.PasswordResetToken).filter(
+        models.PasswordResetToken.token == body.token,
+        models.PasswordResetToken.used == False, # Que no haya sido usado
+        models.PasswordResetToken.expires_at > datetime.utcnow() # Que no esté vencido
+    ).first()
+    
+    if not db_token:
+        raise HTTPException(status_code=400, detail="El enlace de recuperación es inválido, ya fue usado o ha expirado.")
+        
+    # 2. Obtener el usuario dueño del token
+    user = db.query(models.User).filter(models.User.id == db_token.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        
+    # 3. VALIDACIÓN DE NEGOCIO: La contraseña nueva no puede ser la misma que la anterior
+    if security.verify_password(body.new_password, user.hashed_password):
+        raise HTTPException(status_code=400, detail="La nueva contraseña no puede ser igual a la anterior por motivos de seguridad.")
+        
+    # 4. Encriptar y actualizar contraseña
+    user.hashed_password = security.get_password_hash(body.new_password)
+    
+    # 5. QUEMAR EL TOKEN: Marcarlo como usado para evitar ataques de repetición
+    db_token.used = True
+    
+    # Opcional (Extra): Resetear bloqueos por si la cuenta estaba bloqueada por intentos fallidos
+    user.failed_attempts = 0
+    user.locked_until = None
+    
+    db.commit()
+    
+    # 6. NOTIFICACIÓN DE SEGURIDAD: Enviar correo avisando el cambio
+    email_service.send_password_changed_notification(email=user.email)
+    
+    return {"message": "Tu contraseña ha sido actualizada exitosamente. Ya puedes iniciar sesión."}
 # Dependencia de validación de token JWT
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     credentials_exception = HTTPException(

@@ -1,5 +1,4 @@
 <div class="login-layout">
-
   <!-- ── Visual side (desktop only) ── -->
   <aside class="visual-section" aria-hidden="true">
     <div class="mesh-bg">
@@ -9,9 +8,8 @@
     </div>
 
     <div class="visual-content" @fadeInUp>
-
       <div class="brand-mark">
-        <img src="assets/logo/logo.png" alt="KROOT" class="side-logo">
+        <img src="assets/logo/logo.png" alt="KROOT" class="side-logo" />
       </div>
 
       <div class="hero-copy">
@@ -20,13 +18,23 @@
       </div>
 
       <div class="bento-grid">
-
         <div class="bento-item glass-panel">
           <div class="bento-header">
             <div class="icon-wrap">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"
+                />
               </svg>
             </div>
             <span class="badge-on">ACTIVO</span>
@@ -38,10 +46,19 @@
         <div class="bento-item glass-panel">
           <div class="bento-header">
             <div class="icon-wrap green">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/>
-                <path d="m9 12 2 2 4-4"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.8"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
+                <path d="m9 12 2 2 4-4" />
               </svg>
             </div>
           </div>
@@ -55,14 +72,23 @@
               <p class="bento-val">Stock Global</p>
               <p class="bento-sub">Sincronizado en tiempo real</p>
             </div>
-            <svg class="spin-icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
+            <svg
+              class="spin-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
             </svg>
           </div>
         </div>
-
       </div>
     </div>
   </aside>
@@ -70,10 +96,15 @@
   <!-- ── Form side ── -->
   <main class="form-section">
     <div class="form-container" @fadeInUp>
-
       <!-- Logo mobile -->
       <div class="mobile-brand">
-        <img *ngIf="!logoError" src="assets/logo/logo.png" alt="KROOT" class="brand-logo" (error)="handleLogoError()">
+        <img
+          *ngIf="!logoError"
+          src="assets/logo/logo.png"
+          alt="KROOT"
+          class="brand-logo"
+          (error)="handleLogoError()"
+        />
         <span *ngIf="logoError" class="brand-text">KROOT</span>
       </div>
 
@@ -82,16 +113,32 @@
         <p>Ingresa tus credenciales para acceder a tu panel</p>
       </div>
 
-      <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form" novalidate>
-
+      <form
+        [formGroup]="loginForm"
+        (ngSubmit)="onSubmit()"
+        class="login-form"
+        novalidate
+      >
         <!-- Email -->
         <mat-form-field appearance="outline" class="field">
           <mat-label>Correo electrónico</mat-label>
           <mat-icon matPrefix>mail_outline</mat-icon>
-          <input matInput type="email" formControlName="email"
-                 placeholder="nombre@empresa.com" autocomplete="email">
-          <mat-error *ngIf="loginForm.get('email')?.hasError('required')">El correo es obligatorio</mat-error>
-          <mat-error *ngIf="loginForm.get('email')?.hasError('email') && !loginForm.get('email')?.hasError('required')">
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            placeholder="nombre@empresa.com"
+            autocomplete="email"
+          />
+          <mat-error *ngIf="loginForm.get('email')?.hasError('required')"
+            >El correo es obligatorio</mat-error
+          >
+          <mat-error
+            *ngIf="
+              loginForm.get('email')?.hasError('email') &&
+              !loginForm.get('email')?.hasError('required')
+            "
+          >
             Ingresa un correo válido
           </mat-error>
         </mat-form-field>
@@ -100,20 +147,40 @@
         <div class="password-block">
           <div class="password-label-row">
             <span class="pwd-label">Contraseña</span>
-            <a href="#" class="forgot-link">¿Olvidaste tu contraseña?</a>
+            <a routerLink="/forgot-password" class="forgot-link"
+              >¿Olvidaste tu contraseña?</a
+            >
           </div>
           <mat-form-field appearance="outline" class="field">
             <mat-label>Contraseña</mat-label>
             <mat-icon matPrefix>lock_outline</mat-icon>
-            <input matInput [type]="hidePassword ? 'password' : 'text'"
-                   formControlName="password" placeholder="••••••••" autocomplete="current-password">
-            <button mat-icon-button matSuffix type="button"
-                    (click)="hidePassword = !hidePassword"
-                    [attr.aria-label]="hidePassword ? 'Mostrar' : 'Ocultar'">
-              <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+            <input
+              matInput
+              [type]="hidePassword ? 'password' : 'text'"
+              formControlName="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button
+              mat-icon-button
+              matSuffix
+              type="button"
+              (click)="hidePassword = !hidePassword"
+              [attr.aria-label]="hidePassword ? 'Mostrar' : 'Ocultar'"
+            >
+              <mat-icon>{{
+                hidePassword ? "visibility_off" : "visibility"
+              }}</mat-icon>
             </button>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('required')">La contraseña es obligatoria</mat-error>
-            <mat-error *ngIf="loginForm.get('password')?.hasError('minlength') && !loginForm.get('password')?.hasError('required')">
+            <mat-error *ngIf="loginForm.get('password')?.hasError('required')"
+              >La contraseña es obligatoria</mat-error
+            >
+            <mat-error
+              *ngIf="
+                loginForm.get('password')?.hasError('minlength') &&
+                !loginForm.get('password')?.hasError('required')
+              "
+            >
               Mínimo 8 caracteres
             </mat-error>
           </mat-form-field>
@@ -133,10 +200,18 @@
         </div>
 
         <!-- Submit -->
-        <button mat-flat-button class="submit-btn" type="submit"
-                [disabled]="loginForm.invalid || isLoading">
-          <mat-spinner diameter="20" *ngIf="isLoading" class="btn-spinner"></mat-spinner>
-          <span>{{ isLoading ? 'Validando…' : 'Ingresar' }}</span>
+        <button
+          mat-flat-button
+          class="submit-btn"
+          type="submit"
+          [disabled]="loginForm.invalid || isLoading"
+        >
+          <mat-spinner
+            diameter="20"
+            *ngIf="isLoading"
+            class="btn-spinner"
+          ></mat-spinner>
+          <span>{{ isLoading ? "Validando…" : "Ingresar" }}</span>
           <mat-icon *ngIf="!isLoading">arrow_forward</mat-icon>
         </button>
 
@@ -145,22 +220,36 @@
 
         <!-- Google -->
         <button class="google-btn" type="button">
-          <svg class="google-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-            <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-            <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-            <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-            <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <svg
+            class="google-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 48 48"
+          >
+            <path
+              fill="#EA4335"
+              d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+            />
+            <path
+              fill="#4285F4"
+              d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+            />
+            <path
+              fill="#34A853"
+              d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+            />
           </svg>
           Continuar con Google
         </button>
-
       </form>
 
       <p class="signup-prompt">
         ¿No tienes cuenta?
         <a routerLink="/register" class="signup-link">Solicitar acceso</a>
       </p>
-
     </div>
 
     <footer class="form-footer">
@@ -169,5 +258,4 @@
       <a href="#">Soporte</a>
     </footer>
   </main>
-
 </div>

@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private apiUrl = 'http://localhost:8000';
@@ -12,35 +12,55 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  // AUTENTICACIÓN PRINCIPAL
+
   // Inicio de sesión
   login(credentials: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/login`, credentials).pipe(
-      tap(response => {
+      tap((response) => {
         if (response.access_token) {
           localStorage.setItem('auth_token', response.access_token);
           localStorage.setItem('refresh_token', response.refresh_token);
         }
-      })
+      }),
     );
   }
 
-  // --- NUEVO: Registro de usuario ---
+  // Registro de usuario
   register(userData: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, userData);
   }
-  // ----------------------------------
+
+  // RECUPERACIÓN DE CONTRASEÑA
+
+  // Paso 1: Solicitar el correo de recuperación
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/forgot-password`, { email });
+  }
+
+  // Paso 2: Enviar la nueva contraseña con el token
+  resetPassword(token: string, new_password: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/reset-password`, {
+      token,
+      new_password,
+    });
+  }
+
+  // GESTIÓN DE SESIÓN
 
   // Petición silenciosa para renovar tokens
   refreshToken(): Observable<any> {
     const refresh = localStorage.getItem('refresh_token');
-    return this.http.post<any>(`${this.apiUrl}/refresh`, { refresh_token: refresh }).pipe(
-      tap(response => {
-        if (response.access_token) {
-          localStorage.setItem('auth_token', response.access_token);
-          localStorage.setItem('refresh_token', response.refresh_token);
-        }
-      })
-    );
+    return this.http
+      .post<any>(`${this.apiUrl}/refresh`, { refresh_token: refresh })
+      .pipe(
+        tap((response) => {
+          if (response.access_token) {
+            localStorage.setItem('auth_token', response.access_token);
+            localStorage.setItem('refresh_token', response.refresh_token);
+          }
+        }),
+      );
   }
 
   // Cierre de sesión
