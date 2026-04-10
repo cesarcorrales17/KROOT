@@ -1,62 +1,118 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { AuthService } from '../../../auth/services/auth.service';
+import { RouterLink } from '@angular/router';
+
+// MATERIAL DESIGN & GRÁFICOS
+import { MatIconModule } from '@angular/material/icon';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatButtonModule } from '@angular/material/button';
+import { NgApexchartsModule } from 'ng-apexcharts';
+
+// SERVICIO
+import { AuthService } from '../../../../features/auth/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule],
-  template: `
-    <div style="padding: 2rem; font-family: sans-serif;">
-      <h1>Panel de Control (Dashboard)</h1>
-      
-      <button (click)="logout()" style="padding: 10px; background: red; color: white; border: none; cursor: pointer;">
-        Cerrar Sesión
-      </button>
-
-      <div style="margin-top: 2rem; padding: 1rem; background: #f5f5f5; border-radius: 8px;">
-        <h3>Respuesta del Servidor Protegido:</h3>
-        
-        <p *ngIf="isLoading">Cargando datos seguros...</p>
-        
-        <pre *ngIf="serverData">{{ serverData | json }}</pre>
-        
-        <p *ngIf="error" style="color: red;">{{ error }}</p>
-      </div>
-    </div>
-  `
+  imports: [
+    CommonModule,
+    RouterLink,
+    MatIconModule,
+    MatProgressSpinnerModule,
+    MatButtonModule,
+    NgApexchartsModule, // <-- IMPORTANTE AÑADIRLO AQUÍ
+  ],
+  templateUrl: './dashboard.component.html',
+  styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
-  // INYECCIÓN DE DEPENDENCIAS
-  private http = inject(HttpClient);
+  isLoading = true;
+  hasData = false;
+  currency = 'COP';
+
+  // KPIs inicializados en cero
+  kpis = {
+    total_income: 0,
+    total_expenses: 0,
+    cash_flow: 0,
+  };
+
+  // Variable que guardará la configuración del gráfico
+  public chartOptions: any;
+
   private authService = inject(AuthService);
 
-  // ESTADO DE LA VISTA
-  serverData: any = null;
-  isLoading = true;
-  error = '';
-
-  ngOnInit() {
-    this.fetchProtectedData();
+  ngOnInit(): void {
+    this.loadDashboardSummary();
   }
 
-  // PETICIÓN A RUTA PROTEGIDA (El Interceptor actuará aquí automáticamente)
-  fetchProtectedData() {
-    this.http.get('http://localhost:8000/api/dashboard/stats').subscribe({
-      next: (res) => {
-        this.serverData = res;
+  loadDashboardSummary(): void {
+    this.authService.getDashboardSummary().subscribe({
+      next: (data) => {
+        this.hasData = data.has_data;
+        this.currency = data.currency;
+        this.kpis = data.kpis;
+
+        // Si el usuario ya tiene registros, dibujamos la gráfica
+        if (this.hasData) {
+          this.initChart(data.charts);
+        }
+
         this.isLoading = false;
       },
       error: (err) => {
-        this.error = 'No tienes permiso para ver estos datos (Token inválido o ausente).';
+        console.error('Error al cargar el dashboard', err);
         this.isLoading = false;
-      }
+      },
     });
   }
 
-  // FUNCIÓN DE CIERRE DE SESIÓN
-  logout() {
+  // Configuración de ApexCharts
+  initChart(chartData: any): void {
+    this.chartOptions = {
+      series: [
+        {
+          name: 'Ingresos',
+          data: chartData.income_data,
+          color: '#10b981', // Verde esmeralda
+        },
+        {
+          name: 'Gastos',
+          data: chartData.expense_data,
+          color: '#ef4444', // Rojo
+        },
+      ],
+      chart: {
+        type: 'bar',
+        height: 350,
+        fontFamily: 'Inter, sans-serif',
+        toolbar: { show: false },
+      },
+      plotOptions: {
+        bar: {
+          horizontal: false,
+          columnWidth: '55%',
+          borderRadius: 4,
+        },
+      },
+      dataLabels: { enabled: false },
+      stroke: { show: true, width: 2, colors: ['transparent'] },
+      xaxis: { categories: chartData.labels },
+      yaxis: {
+        title: { text: `$ (${this.currency})` },
+      },
+      fill: { opacity: 1 },
+      tooltip: {
+        y: {
+          formatter: (val: number) => {
+            return '$' + val.toLocaleString();
+          },
+        },
+      },
+    };
+  }
+
+  logout(): void {
     this.authService.logout();
   }
 }

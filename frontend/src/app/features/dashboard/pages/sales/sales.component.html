@@ -1,0 +1,216 @@
+<div class="dashboard-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+    </div>
+
+    <nav class="sidebar-menu">
+      <a routerLink="/dashboard" class="menu-item">
+        <mat-icon>dashboard</mat-icon>
+        <span>Dashboard</span>
+      </a>
+      <a routerLink="/sales" class="menu-item active">
+        <mat-icon>point_of_sale</mat-icon>
+        <span>Ingresar Ventas</span>
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/profile" class="menu-item">
+        <mat-icon>settings</mat-icon>
+        <span>Configuración</span>
+      </a>
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <h1 class="page-title">Registro de Ventas</h1>
+    </header>
+
+    <div class="content-wrapper">
+      <div class="split-layout">
+        <div class="form-section">
+          <div class="settings-card">
+            <div class="card-header">
+              <mat-icon>add_shopping_cart</mat-icon>
+              <div>
+                <h2>Nueva Venta</h2>
+                <p>Ingresa los detalles de la venta para tus estadísticas.</p>
+              </div>
+            </div>
+
+            <div *ngIf="successMessage" class="alert success-alert">
+              <mat-icon>check_circle</mat-icon>
+              <span>{{ successMessage }}</span>
+            </div>
+            <div *ngIf="errorMessage" class="alert error-alert">
+              <mat-icon>error</mat-icon>
+              <span>{{ errorMessage }}</span>
+            </div>
+
+            <form
+              [formGroup]="salesForm"
+              (ngSubmit)="onSubmit()"
+              class="settings-form"
+            >
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Monto Vendido</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="amount"
+                    placeholder="Ej. 1500000"
+                  />
+                  <mat-icon matPrefix>attach_money</mat-icon>
+                  <mat-error
+                    *ngIf="salesForm.get('amount')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Fecha de la Venta</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="picker"
+                    formControlName="period_date"
+                  />
+                  <mat-datepicker-toggle
+                    matIconSuffix
+                    [for]="picker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                  <mat-error
+                    *ngIf="salesForm.get('period_date')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                </mat-form-field>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Categoría</mat-label>
+                  <mat-select formControlName="category">
+                    <mat-option *ngFor="let cat of categories" [value]="cat">{{
+                      cat
+                    }}</mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>category</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Método de Pago</mat-label>
+                  <mat-select formControlName="payment_method">
+                    <mat-option
+                      *ngFor="let pm of paymentMethods"
+                      [value]="pm"
+                      >{{ pm }}</mat-option
+                    >
+                  </mat-select>
+                  <mat-icon matPrefix>wallet</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Comparativa Base</mat-label>
+                  <mat-select
+                    formControlName="period_type"
+                    (selectionChange)="onPeriodChange($event)"
+                  >
+                    <mat-option value="weekly">Semanal</mat-option>
+                    <mat-option value="monthly">Mensual</mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>date_range</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Notas (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="description"
+                    placeholder="Ej. Cliente solicitó factura..."
+                  />
+                  <mat-icon matPrefix>notes</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  mat-flat-button
+                  type="submit"
+                  class="btn-save"
+                  [disabled]="isSaving || salesForm.invalid"
+                >
+                  <span *ngIf="!isSaving">Registrar Ingreso</span>
+                  <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="summary-section">
+          <div class="settings-card comparative-card">
+            <h3>
+              Comparativa
+              {{
+                salesForm.get("period_type")?.value === "monthly"
+                  ? "Mensual"
+                  : "Semanal"
+              }}
+            </h3>
+
+            <div *ngIf="isLoadingSummary" class="loading-state-small">
+              <mat-spinner diameter="30"></mat-spinner>
+            </div>
+
+            <div *ngIf="!isLoadingSummary && summary">
+              <div class="summary-item main">
+                <span class="label">Período Actual</span>
+                <span class="value"
+                  >${{ summary.current_period_amount | number }}
+                  <small>{{ currentCurrency }}</small></span
+                >
+              </div>
+
+              <div class="summary-item secondary">
+                <span class="label">Período Anterior</span>
+                <span class="value"
+                  >${{ summary.previous_period_amount | number }}</span
+                >
+              </div>
+
+              <div class="trend-indicator" [ngClass]="summary.trend">
+                <mat-icon *ngIf="summary.trend === 'up'">trending_up</mat-icon>
+                <mat-icon *ngIf="summary.trend === 'down'"
+                  >trending_down</mat-icon
+                >
+                <mat-icon *ngIf="summary.trend === 'neutral'"
+                  >trending_flat</mat-icon
+                >
+
+                <div class="trend-text">
+                  <span class="pct">{{ summary.difference_percentage }}%</span>
+                  <span class="desc">
+                    {{
+                      summary.trend === "up"
+                        ? "más que el período anterior"
+                        : summary.trend === "down"
+                          ? "menos que el período anterior"
+                          : "igual al período anterior"
+                    }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

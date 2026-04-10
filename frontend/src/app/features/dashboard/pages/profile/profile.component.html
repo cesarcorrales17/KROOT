@@ -1,0 +1,144 @@
+<div class="dashboard-layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+    </div>
+
+    <nav class="sidebar-menu">
+      <a routerLink="/dashboard" class="menu-item">
+        <mat-icon>dashboard</mat-icon>
+        <span>Dashboard</span>
+      </a>
+
+      <a routerLink="/sales" class="menu-item">
+        <mat-icon>point_of_sale</mat-icon>
+        <span>Ingresar Ventas</span>
+      </a>
+
+      <div class="menu-divider"></div>
+
+      <a routerLink="/profile" class="menu-item active">
+        <mat-icon>settings</mat-icon>
+        <span>Configuración</span>
+      </a>
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <h1 class="page-title">Configuración del Negocio</h1>
+    </header>
+
+    <div class="content-wrapper">
+      <div *ngIf="isLoading" class="loading-state">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Cargando información...</p>
+      </div>
+
+      <div *ngIf="!isLoading" class="settings-card">
+        <div class="card-header">
+          <mat-icon>storefront</mat-icon>
+          <div>
+            <h2>Datos Generales</h2>
+            <p>Mantén tu información actualizada para cálculos precisos.</p>
+          </div>
+        </div>
+
+        <div *ngIf="successMessage" class="alert success-alert">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ successMessage }}</span>
+        </div>
+        <div *ngIf="errorMessage" class="alert error-alert">
+          <mat-icon>error</mat-icon>
+          <span>{{ errorMessage }}</span>
+        </div>
+
+        <form
+          [formGroup]="profileForm"
+          (ngSubmit)="onSubmit()"
+          class="settings-form"
+        >
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Nombre de la Empresa</mat-label>
+              <input
+                matInput
+                formControlName="business_name"
+                placeholder="Ej. D'Oro Compraventa y Joyería"
+              />
+              <mat-icon matPrefix>business</mat-icon>
+              <mat-error
+                *ngIf="profileForm.get('business_name')?.hasError('required')"
+                >Requerido</mat-error
+              >
+            </mat-form-field>
+          </div>
+
+          <div class="form-row grid-2">
+            <mat-form-field appearance="outline">
+              <mat-label>Sector / Industria</mat-label>
+              <mat-select formControlName="industry">
+                <mat-option *ngFor="let sector of sectors" [value]="sector.id">
+                  {{ sector.name }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>domain</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Tamaño del Negocio</mat-label>
+              <mat-select formControlName="business_size">
+                <mat-option
+                  *ngFor="let size of businessSizes"
+                  [value]="size.value"
+                >
+                  {{ size.label }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>groups</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Moneda Principal</mat-label>
+              <mat-select formControlName="currency">
+                <mat-option
+                  *ngFor="let coin of currencies"
+                  [value]="coin.value"
+                >
+                  {{ coin.label }}
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>payments</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <div class="form-actions">
+            <div class="info-note">
+              <mat-icon>info</mat-icon>
+              <span
+                >Cambiar el sector ajustará las alertas del motor de
+                señales.</span
+              >
+            </div>
+
+            <button
+              mat-flat-button
+              type="submit"
+              class="btn-save"
+              [disabled]="isSaving || profileForm.invalid"
+            >
+              <span *ngIf="!isSaving">Guardar Cambios</span>
+              <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>

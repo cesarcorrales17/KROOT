@@ -100,4 +100,48 @@ export class AuthService {
       this.getHeaders(),
     );
   }
+
+  // GESTIÓN DE PERFIL
+  getBusinessProfile(): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/business/profile`,
+      this.getHeaders(),
+    );
+  }
+
+  updateBusinessProfile(data: any): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/business/profile`,
+      data,
+      this.getHeaders(),
+    );
+  }
+
+  // ==========================================
+  // DASHBOARD
+  // ==========================================
+  getDashboardSummary(): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/dashboard/summary`,
+      this.getHeaders(),
+    );
+  }
+
+  // ==========================================
+  // VENTAS E INDICADORES
+  // ==========================================
+  createSale(saleData: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/sales`,
+      saleData,
+      this.getHeaders(),
+    );
+  }
+
+  getSalesSummary(periodType: string = 'monthly'): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/sales/summary?period_type=${periodType}`,
+      this.getHeaders(),
+    );
+  }
 }

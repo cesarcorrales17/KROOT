@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -53,11 +53,15 @@ class Business(Base):
     # Paso 2 - Información financiera
     industry = Column(String, nullable=True)
     
-    # Paso 3 - Estimaciones financieras
+    # Paso 3 - Información adicional 
+    business_size = Column(String, nullable=True)
+    currency = Column(String, default="COP")
+    
+    # Paso 4 - Estimaciones financieras
     estimated_income = Column(Integer, nullable=True) # Usamos Integer para simplificar, o Float si prefieres decimales
     estimated_expenses = Column(Integer, nullable=True)
     
-    # Paso 4 - Configuración de seguimiento
+    # Paso 5 - Configuración de seguimiento
     tracking_frequency = Column(String, nullable=True)
     
     # Control del Wizard 
@@ -66,3 +70,41 @@ class Business(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now()) # Se actualiza solo en cada "auto-guardado"
 
     user = relationship("User", back_populates="business")
+    
+    
+# TABLA DE TRANSACCIONES (INGRESOS Y GASTOS)
+class Transaction(Base):
+    __tablename__ = "transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    # ondelete="CASCADE" significa que si borras una empresa, sus transacciones se borran solas
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
+    
+    transaction_type = Column(String, nullable=False) # 'ingreso' o 'gasto'
+    amount = Column(Float, nullable=False)
+    transaction_date = Column(Date, nullable=False)
+    description = Column(String, nullable=True)
+    category = Column(String, nullable=True)
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relación (Asegurar que la clase Business la reconozca después)
+    business = relationship("Business", backref="transactions")
+    
+class Sale(Base):
+    __tablename__ = "sales"
+
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
+    
+    amount = Column(Float, nullable=False)
+    period_type = Column(String, nullable=False)
+    period_date = Column(Date, nullable=False)
+    
+    category = Column(String, nullable=True)        
+    payment_method = Column(String, nullable=True)  
+    description = Column(String, nullable=True)     
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    business = relationship("Business", backref="sales")

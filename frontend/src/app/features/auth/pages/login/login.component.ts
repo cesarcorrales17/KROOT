@@ -85,30 +85,42 @@ export class LoginComponent {
       // COMUNICACIÓN CON EL BACKEND
       this.authService.login(loginData).subscribe({
         next: (response) => {
-          this.isLoading = false;
+          // El token ya se guardó gracias al operador 'tap' en tu auth.service.ts
 
-          // Evaluamos la bandera que nos envía FastAPI
-          if (response.is_setup_completed) {
-            // Usuario veterano -> Al Dashboard
-            this.router.navigate(['/dashboard']);
-          } else {
-            // Usuario nuevo -> Al Wizard de configuración de la Empresa
-            this.router.navigate(['/company-setup']);
-          }
-          // -------------------------------
+          // Ahora preguntamos por el estado real del negocio
+          this.authService.getBusinessSetup().subscribe({
+            next: (businessData) => {
+              this.isLoading = false;
+
+              // Evaluamos el campo 'onboarding_completed' que viene de la base de datos
+              if (businessData && businessData.onboarding_completed) {
+                // Usuario veterano -> Al Dashboard
+                this.router.navigate(['/dashboard']);
+              } else {
+                // Usuario con progreso a medias -> Al Wizard
+                this.router.navigate(['/company-setup']);
+              }
+            },
+            error: (err) => {
+              this.isLoading = false;
+              // Si el backend responde con 404, significa que no existe el negocio
+              // Usuario nuevo -> Al Wizard
+              this.router.navigate(['/company-setup']);
+            },
+          });
         },
         error: (err) => {
           this.isLoading = false;
 
-          // MANEJO DE CÓDIGOS DE ESTADO HTTP
+          // MANEJO DE CÓDIGOS DE ESTADO HTTP (Intacto)
           if (err.status === 401) {
             // Error 401: Contraseña incorrecta
             this.errorMessage =
-              err.error.detail || 'Correo o contraseña incorrectos.';
+              err.error?.detail || 'Correo o contraseña incorrectos.';
           } else if (err.status === 403) {
             // Error 403: Cuenta bloqueada por seguridad
             this.errorMessage =
-              err.error.detail || 'Cuenta bloqueada temporalmente.';
+              err.error?.detail || 'Cuenta bloqueada temporalmente.';
           } else {
             // Error genérico
             this.errorMessage = 'Error de conexión con el servidor.';
@@ -119,6 +131,7 @@ export class LoginComponent {
       this.loginForm.markAllAsTouched();
     }
   }
+
   // NAVEGACIÓN HACIA EL REGISTRO
   goToRegister() {
     this.router.navigate(['/register']);

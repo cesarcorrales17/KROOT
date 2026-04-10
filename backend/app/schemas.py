@@ -1,7 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 import re
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
+from datetime import date
 
 # MODELOS DE PETICIÓN (Entrada desde Angular)
 class LoginRequest(BaseModel):
@@ -77,6 +78,13 @@ class BusinessSetupPartial(BaseModel):
     tracking_frequency: Optional[str] = None
     onboarding_completed: Optional[bool] = False
 
+# Esquema para actualizar el perfil del negocio
+class BusinessProfileUpdate(BaseModel):
+    business_name: str
+    industry: str
+    business_size: str
+    currency: str
+    
 # Esquema de respuesta para enviarle a Angular cuando vuelva a entrar
 class BusinessResponse(BaseModel):
     id: int
@@ -84,6 +92,8 @@ class BusinessResponse(BaseModel):
     business_name: Optional[str] = None
     business_type: Optional[str] = None
     industry: Optional[str] = None
+    business_size: Optional[str] = None 
+    currency: Optional[str] = None      
     estimated_income: Optional[int] = None
     estimated_expenses: Optional[int] = None
     tracking_frequency: Optional[str] = None
@@ -91,3 +101,48 @@ class BusinessResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        
+        
+# ESQUEMAS PARA EL DASHBOARD
+class KPIStats(BaseModel):
+    total_income: float
+    total_expenses: float
+    cash_flow: float
+
+class ChartData(BaseModel):
+    labels: List[str]
+    income_data: List[float]
+    expense_data: List[float]
+
+class DashboardSummary(BaseModel):
+    has_data: bool
+    currency: str
+    kpis: KPIStats
+    charts: ChartData
+    
+    
+# ESQUEMAS PARA VENTAS
+class SaleCreate(BaseModel):
+    amount: float
+    period_type: str
+    period_date: date
+    category: Optional[str] = None
+    payment_method: Optional[str] = None
+    description: Optional[str] = None
+
+class SaleResponse(BaseModel):
+    id: int
+    business_id: int
+    amount: float
+    period_type: str
+    period_date: date
+    
+    class Config:
+        from_attributes = True
+
+class SalesSummary(BaseModel):
+    current_period_amount: float
+    previous_period_amount: float
+    difference_amount: float
+    difference_percentage: float
+    trend: str # 'up', 'down', 'neutral'

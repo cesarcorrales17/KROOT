@@ -52,4 +52,18 @@ export const routes: Routes = [
         (m) => m.ResetPasswordComponent,
       ),
   },
+  {
+    path: 'profile',
+    loadComponent: () =>
+      import('./features/dashboard/pages/profile/profile.component').then(
+        (m) => m.ProfileComponent,
+      ),
+  },
+  {
+    path: 'sales',
+    loadComponent: () =>
+      import('./features/dashboard/pages/sales/sales.component').then(
+        (m) => m.SalesComponent,
+      ),
+  },
 ];

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import uuid
@@ -50,7 +51,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 def health_check():
     return {"status": "ok", "message": "Backend operativo al 100%"}
 
+
+# ==========================================
 # NUEVO ENDPOINT DE REGISTRO ACTUALIZADO CON ENVÍO DE CORREO
+# ==========================================
+
+# Endpoint de registro de usuario con envío de correo de verificación
 @app.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute") # Protegemos también la creación de cuentas
 def register_user(request: Request, user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -170,6 +176,12 @@ def login(request: Request, user_credentials: schemas.LoginRequest, db: Session 
         "token_type": "bearer",
         "is_setup_completed": user.is_setup_completed
     }
+
+
+# ==========================================
+# ENDPOINTS DE RECUPERACIÓN DE CONTRASEÑA
+# ==========================================
+
 @app.post("/forgot-password")
 @limiter.limit("3/minute") # Rate limit estricto para evitar spam masivo de correos
 def forgot_password(request: Request, body: schemas.ForgotPasswordRequest, db: Session = Depends(get_db)):
@@ -197,6 +209,7 @@ def forgot_password(request: Request, body: schemas.ForgotPasswordRequest, db: S
     # 6. SEGURIDAD: Respondemos siempre lo mismo, exista o no el correo (Anti-enumeración)
     return {"message": "Si el correo está registrado en Kroot, recibirás un enlace de recuperación en los próximos minutos."}
 
+# Endpoint para resetear la contraseña usando el token enviado por correo
 @app.post("/reset-password")
 @limiter.limit("5/minute")
 def reset_password(request: Request, body: schemas.ResetPasswordRequest, db: Session = Depends(get_db)):
@@ -332,7 +345,7 @@ def get_business_sectors():
         "sectors": sectors_list,
         "business_types": types_list
     }
-    
+
 # WIZARD DE CONFIGURACIÓN DE EMPRESA
 @app.get("/business/setup", response_model=schemas.BusinessResponse)
 def get_business_setup(
@@ -386,3 +399,199 @@ def update_business_setup(
     db.refresh(current_user) # Refrescamos el usuario por si cambió su estado
     
     return business
+
+
+# ==========================================
+# GESTIÓN DE PERFIL DEL NEGOCIO
+# ==========================================
+
+@app.get("/business/profile", response_model=schemas.BusinessResponse)
+def get_business_profile(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Obtiene los datos actuales del negocio para precargarlos en el formulario."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    return business
+
+@app.put("/business/profile", response_model=schemas.BusinessResponse)
+def update_business_profile(
+    profile_data: schemas.BusinessProfileUpdate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Actualiza la información principal del negocio y dispara el recálculo."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # Regla de negocio: Si el sector cambió, necesitamos recalibrar las alertas (aunque esto lo haremos en la TAREA 4)
+    sector_changed = business.industry != profile_data.industry
+        
+    # Actualiza solo los campos relevantes (podemos expandir esto según lo que Angular envíe)
+    business.business_name = profile_data.business_name
+    business.industry = profile_data.industry
+    business.business_size = profile_data.business_size
+    business.currency = profile_data.currency
+    
+    db.commit()
+    db.refresh(business)
+    
+    # TODO: Lógica de negocio (Impacto en el sistema)
+    if sector_changed:
+        # Aquí más adelante llamaremos a la función que recalibra las alertas:
+        # engine.recalculate_thresholds(business.id, profile_data.industry)
+        pass
+        
+    return business
+
+
+# ==========================================
+# ENDPOINTS PARA EL DASHBOARD
+# ==========================================
+
+@app.get("/dashboard/summary", response_model=schemas.DashboardSummary)
+def get_dashboard_summary(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Calcula los KPIs y los datos para los gráficos del Dashboard."""
+    
+    # 1. Buscamos el negocio del usuario
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # 2. Buscamos las transacciones
+    # Por ahora traemos todo, en el futuro filtraremos por el mes actual
+    transactions = db.query(models.Transaction).filter(models.Transaction.business_id == business.id).all()
+    
+    # Si no hay transacciones, devolvemos el estado vacío (Empty State)
+    if not transactions:
+        return {
+            "has_data": False,
+            "currency": business.currency or "COP",
+            "kpis": {"total_income": 0.0, "total_expenses": 0.0, "cash_flow": 0.0},
+            "charts": {
+                "labels": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
+                "income_data": [0, 0, 0, 0],
+                "expense_data": [0, 0, 0, 0]
+            }
+        }
+
+    # 3. Calcular KPIs reales (Lógica de Negocio)
+    total_inc = sum(t.amount for t in transactions if t.transaction_type == 'ingreso')
+    total_exp = sum(t.amount for t in transactions if t.transaction_type == 'gasto')
+    
+    # 4. Agrupar para los Gráficos (Agrupación simple simulada por ahora)
+    # Aquí iría la lógica compleja de agrupar por mes/día usando itertools o pandas
+    # Para arrancar, enviaremos los totales para asegurar que la gráfica pinte algo.
+    
+    return {
+        "has_data": True,
+        "currency": business.currency or "COP",
+        "kpis": {
+            "total_income": total_inc,
+            "total_expenses": total_exp,
+            "cash_flow": total_inc - total_exp
+        },
+        "charts": {
+            "labels": ["Actual"], # Etiquetas del eje X
+            "income_data": [total_inc],
+            "expense_data": [total_exp]
+        }
+    }
+    
+   
+# ==========================================
+# ENDPOINTS PARA GESTIÓN DE VENTAS
+# ==========================================
+
+# Endpoint para crear un registro de venta con validación de monto positivo 
+@app.post("/sales", response_model=schemas.SaleResponse)
+def create_sale(
+    sale_data: schemas.SaleCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Guarda un registro de ventas validando que el monto sea positivo."""
+    if sale_data.amount < 0:
+        raise HTTPException(status_code=400, detail="El monto de venta no puede ser negativo.")
+
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    new_sale = models.Sale(
+        business_id=business.id,
+        amount=sale_data.amount,
+        period_type=sale_data.period_type,
+        period_date=sale_data.period_date
+    )
+    
+    db.add(new_sale)
+    db.commit()
+    db.refresh(new_sale)
+    
+    return new_sale
+
+# Endpoint para obtener el resumen de ventas comparando el período actual con el anterior, mostrando la diferencia porcentual y la tendencia visual (sube, baja, neutral).
+@app.get("/sales/summary", response_model=schemas.SalesSummary)
+def get_sales_summary(
+    period_type: str = "monthly", 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    Obtiene las ventas del período actual y el anterior para calcular 
+    la diferencia porcentual y la tendencia.
+    """
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    
+    # Traemos las ventas ordenadas de la más reciente a la más antigua
+    sales = db.query(models.Sale)\
+        .filter(models.Sale.business_id == business.id, models.Sale.period_type == period_type)\
+        .order_by(models.Sale.period_date.desc())\
+        .all()
+
+    # Si no hay ventas, devolvemos todo en cero
+    if not sales:
+        return {
+            "current_period_amount": 0.0,
+            "previous_period_amount": 0.0,
+            "difference_amount": 0.0,
+            "difference_percentage": 0.0,
+            "trend": "neutral"
+        }
+
+    # Asumimos que el primer registro es el actual y el segundo el anterior
+    # (En una versión avanzada usaríamos lógica de fechas exacta con librerías como relativedelta)
+    current_sale = sales[0].amount
+    previous_sale = sales[1].amount if len(sales) > 1 else 0.0
+
+    diff_amount = current_sale - previous_sale
+    
+    # Prevenir división por cero
+    if previous_sale > 0:
+        diff_percentage = (diff_amount / previous_sale) * 100
+    else:
+        diff_percentage = 100.0 if current_sale > 0 else 0.0
+
+    # Definir tendencia visual
+    if diff_amount > 0:
+        trend = "up"
+    elif diff_amount < 0:
+        trend = "down"
+    else:
+        trend = "neutral"
+
+    return {
+        "current_period_amount": current_sale,
+        "previous_period_amount": previous_sale,
+        "difference_amount": diff_amount,
+        "difference_percentage": round(diff_percentage, 2),
+        "trend": trend
+    }

@@ -1,0 +1,285 @@
+$primary: #001736;
+$bg-light: #f7f9fb;
+$border: #e0e3e5;
+$text-main: #191c1e;
+$text-muted: #64748b;
+
+/* ==========================================
+   LAYOUT BASE (Idéntico a Profile)
+   ========================================== */
+.dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: $bg-light;
+  font-family: "Inter", sans-serif;
+}
+
+.sidebar {
+  width: 260px;
+  background: #ffffff;
+  border-right: 1px solid $border;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+
+  .sidebar-brand {
+    padding: 24px;
+    border-bottom: 1px solid $border;
+    display: flex;
+    justify-content: center;
+
+    .brand-logo {
+      height: 32px;
+      object-fit: contain;
+    }
+  }
+
+  .sidebar-menu {
+    padding: 24px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-radius: 8px;
+      color: $text-muted;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+
+      mat-icon {
+        margin-right: 12px;
+      }
+
+      &:hover {
+        background: #f1f5f9;
+        color: $text-main;
+      }
+
+      &.active {
+        background: $primary;
+        color: #ffffff;
+      }
+
+      &.logout {
+        color: #ef4444;
+        margin-top: auto;
+        &:hover {
+          background: #fef2f2;
+        }
+      }
+    }
+
+    .menu-divider {
+      height: 1px;
+      background: $border;
+      margin: 16px 0;
+    }
+  }
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 260px;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: #ffffff;
+  border-bottom: 1px solid $border;
+  padding: 24px 40px;
+
+  .page-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: $primary;
+    font-family: "Manrope", sans-serif;
+  }
+}
+
+.content-wrapper {
+  padding: 40px;
+  max-width: 1200px;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 0;
+  color: $text-muted;
+
+  mat-spinner {
+    margin-bottom: 16px;
+  }
+}
+
+/* ==========================================
+   NUEVO: TARJETAS KPI (Ingresos, Gastos, Flujo)
+   ========================================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.kpi-card {
+  background: #ffffff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+  }
+
+  .kpi-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .kpi-info {
+    .kpi-label {
+      display: block;
+      color: $text-muted;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+
+    .kpi-value {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+      color: $text-main;
+      font-family: "Manrope", sans-serif;
+
+      small {
+        font-size: 14px;
+        color: $text-muted;
+        font-weight: 500;
+      }
+    }
+  }
+
+  // Colores específicos por tarjeta
+  &.income .kpi-icon {
+    background: #d1fae5;
+    color: #059669;
+  }
+
+  &.expense .kpi-icon {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  &.cashflow .kpi-icon {
+    background: #e0e7ff;
+    color: #4f46e5;
+  }
+
+  &.cashflow.negative {
+    .kpi-icon {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+    .kpi-value {
+      color: #dc2626;
+    }
+  }
+}
+
+/* ==========================================
+   NUEVO: ESTADO VACÍO (Empty State)
+   ========================================== */
+.empty-state {
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 64px 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  .empty-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #94a3b8;
+    margin-bottom: 24px;
+  }
+
+  h2 {
+    color: $primary;
+    margin: 0 0 12px 0;
+    font-size: 20px;
+    font-family: "Manrope", sans-serif;
+  }
+
+  p {
+    color: $text-muted;
+    max-width: 400px;
+    margin: 0 0 32px 0;
+    line-height: 1.5;
+  }
+
+  .btn-primary {
+    background: $primary;
+    color: white;
+    padding: 24px 32px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+}
+
+/* ==========================================
+   NUEVO: TARJETA DEL GRÁFICO
+   ========================================== */
+.chart-card {
+  background: #ffffff;
+  border: 1px solid $border;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+
+  .chart-header {
+    margin-bottom: 24px;
+
+    h3 {
+      margin: 0;
+      color: $text-main;
+      font-size: 16px;
+      font-weight: 600;
+    }
+  }
+}
