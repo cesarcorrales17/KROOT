@@ -47,6 +47,10 @@ export class CompanySetupComponent implements OnInit {
   isLoading = true; // Para la carga inicial
   isSaving = false; // Para el spinner del guardado automático
 
+  // NUEVAS VARIABLES PARA LOS DATOS DINÁMICOS
+  businessTypes: any[] = [];
+  sectors: any[] = [];
+
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -76,10 +80,24 @@ export class CompanySetupComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadSavedProgress();
+    this.loadSectorsConfig(); // <-- 1. Cargamos las reglas (Sectores y Tipos)
+    this.loadSavedProgress(); // <-- 2. Cargamos el progreso del usuario
   }
 
-  // TAREA: Cargar datos si el usuario regresa
+  // Consumir endpoint /business/sectors
+  loadSectorsConfig(): void {
+    this.authService.getBusinessSectors().subscribe({
+      next: (data) => {
+        this.sectors = data.sectors;
+        this.businessTypes = data.business_types;
+      },
+      error: (err) => {
+        console.error('Error al cargar sectores', err);
+      },
+    });
+  }
+
+  // Cargar datos si el usuario regresa
   loadSavedProgress(): void {
     this.authService.getBusinessSetup().subscribe({
       next: (data) => {

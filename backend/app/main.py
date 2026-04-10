@@ -6,13 +6,15 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import uuid
 
+# Librerías para Rate Limiting
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
-# AÑADIDO: Importamos el nuevo servicio de emails (Asegúrate de crearlo en la carpeta app)
+# Importaciones internas
 from app import models, schemas, security, email_service
 from app.database import engine, get_db
+from app.business_rules import SECTOR_CONFIGS, BUSINESS_TYPES
 
 # Inicialización de base de datos
 models.Base.metadata.create_all(bind=engine)
@@ -306,6 +308,29 @@ def refresh_session(request_data: RefreshTokenRequest, db: Session = Depends(get
         "access_token": new_access_token,
         "refresh_token": new_refresh_token,
         "token_type": "bearer"
+    }
+    
+# ENDPOINTS PARA EL WIZARD DE CONFIGURACIÓN DE EMPRESA
+@app.get("/business/sectors")
+def get_business_sectors():
+    """
+    Devuelve la lista de sectores disponibles con sus descripciones 
+    para armar la UI en Angular (Dropdowns o Tarjetas).
+    """
+    # Formateamos el diccionario para que sea fácil de iterar en Angular
+    sectors_list = [
+        {"id": key, "name": key.replace("_", " ").title(), "description": value["description"]}
+        for key, value in SECTOR_CONFIGS.items()
+    ]
+    
+    types_list = [
+        {"id": key, "name": value}
+        for key, value in BUSINESS_TYPES.items()
+    ]
+    
+    return {
+        "sectors": sectors_list,
+        "business_types": types_list
     }
     
 # WIZARD DE CONFIGURACIÓN DE EMPRESA

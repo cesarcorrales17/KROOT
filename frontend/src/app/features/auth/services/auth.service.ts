@@ -87,6 +87,11 @@ export class AuthService {
     );
   }
 
+  // Obtener los sectores y tipos de negocio desde el diccionario del backend
+  getBusinessSectors(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/business/sectors`);
+  }
+
   // Guardado automático (Upsert)
   updateBusinessSetup(data: any): Observable<any> {
     return this.http.patch<any>(

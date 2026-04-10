@@ -51,25 +51,46 @@
                 >
               </mat-form-field>
 
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Tipo de estructura</mat-label>
-                <mat-select formControlName="business_type">
-                  <mat-option value="independiente"
-                    >Profesional Independiente / Freelance</mat-option
-                  >
-                  <mat-option value="pyme"
-                    >PYME (Pequeña o Mediana Empresa)</mat-option
-                  >
-                  <mat-option value="corporacion"
-                    >Corporación / Gran Empresa</mat-option
-                  >
-                </mat-select>
-                <mat-icon matPrefix>category</mat-icon>
-                <mat-error
-                  *ngIf="step1Form.get('business_type')?.hasError('required')"
-                  >Selecciona un tipo</mat-error
+              <div
+                class="field-label"
+                style="margin-bottom: 12px; font-weight: 600; color: #001736"
+              >
+                Tipo de estructura
+              </div>
+
+              <div class="selection-grid">
+                <div
+                  *ngFor="let bt of businessTypes"
+                  class="kroot-card"
+                  [class.active]="
+                    step1Form.get('business_type')?.value === bt.id
+                  "
+                  (click)="step1Form.get('business_type')?.setValue(bt.id)"
                 >
-              </mat-form-field>
+                  <mat-icon class="status-icon">
+                    {{
+                      step1Form.get("business_type")?.value === bt.id
+                        ? "radio_button_checked"
+                        : "radio_button_unchecked"
+                    }}
+                  </mat-icon>
+                  <span class="card-title">{{ bt.name }}</span>
+                </div>
+              </div>
+              <mat-error
+                *ngIf="
+                  step1Form.get('business_type')?.touched &&
+                  step1Form.get('business_type')?.hasError('required')
+                "
+                style="
+                  font-size: 12px;
+                  margin-top: 8px;
+                  display: block;
+                  color: #f44336;
+                "
+              >
+                Selecciona un tipo de estructura
+              </mat-error>
             </div>
 
             <div class="step-actions">
@@ -93,26 +114,46 @@
 
             <div class="step-body">
               <p class="micro-copy">
-                Saber tu industria nos ayuda a compararte con el mercado.
+                Seleccionar tu industria calibra nuestro motor financiero para
+                darte alertas y recomendaciones precisas.
               </p>
-              <mat-form-field appearance="outline" class="full-width">
-                <mat-label>Sector o Industria</mat-label>
-                <mat-select formControlName="industry">
-                  <mat-option value="tecnologia"
-                    >Tecnología y Software</mat-option
-                  >
-                  <mat-option value="comercio"
-                    >Comercio Minorista / Retail</mat-option
-                  >
-                  <mat-option value="servicios"
-                    >Servicios Profesionales</mat-option
-                  >
-                  <mat-option value="salud">Salud y Bienestar</mat-option>
-                  <mat-option value="manufactura">Manufactura</mat-option>
-                  <mat-option value="otro">Otro</mat-option>
-                </mat-select>
-                <mat-icon matPrefix>store</mat-icon>
-              </mat-form-field>
+
+              <div class="selection-grid sectors-grid">
+                <div
+                  *ngFor="let sector of sectors"
+                  class="kroot-card sector-card"
+                  [class.active]="
+                    step2Form.get('industry')?.value === sector.id
+                  "
+                  (click)="step2Form.get('industry')?.setValue(sector.id)"
+                >
+                  <div class="card-header">
+                    <mat-icon class="status-icon">
+                      {{
+                        step2Form.get("industry")?.value === sector.id
+                          ? "check_circle"
+                          : "radio_button_unchecked"
+                      }}
+                    </mat-icon>
+                    <span class="card-title">{{ sector.name }}</span>
+                  </div>
+                  <p class="card-desc">{{ sector.description }}</p>
+                </div>
+              </div>
+              <mat-error
+                *ngIf="
+                  step2Form.get('industry')?.touched &&
+                  step2Form.get('industry')?.hasError('required')
+                "
+                style="
+                  font-size: 12px;
+                  margin-top: 8px;
+                  display: block;
+                  color: #f44336;
+                "
+              >
+                Debes seleccionar una industria para continuar
+              </mat-error>
             </div>
 
             <div class="step-actions dual-actions">
