@@ -1,15 +1,10 @@
 <div class="dashboard-layout">
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <img
-        src="assets/logo/logoregister.png"
-        alt="Kroot Logo"
-        class="brand-logo"
-      />
+      <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
     </div>
-
     <nav class="sidebar-menu">
-      <a routerLink="/dashboard" class="menu-item active">
+      <a routerLink="/dashboard" class="menu-item">
         <mat-icon>dashboard</mat-icon>
         <span>Dashboard</span>
       </a>
@@ -21,7 +16,7 @@
 
       <div class="menu-divider"></div>
 
-      <a routerLink="/profile" class="menu-item">
+      <a routerLink="/profile" class="menu-item active">
         <mat-icon>settings</mat-icon>
         <span>Configuración</span>
       </a>
@@ -35,87 +30,140 @@
   <main class="main-content">
     <header class="topbar">
       <h1 class="page-title">Resumen Financiero</h1>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-select [(value)]="selectedPeriod">
+          <mat-option value="this_month">Este mes</mat-option>
+          <mat-option value="this_week">Esta semana</mat-option>
+        </mat-select>
+      </mat-form-field>
     </header>
 
     <div class="content-wrapper">
       <div *ngIf="isLoading" class="loading-state">
         <mat-spinner diameter="40"></mat-spinner>
-        <p>Analizando tus métricas...</p>
       </div>
 
-      <div *ngIf="!isLoading">
-        <div class="kpi-grid">
-          <div class="kpi-card income">
-            <div class="kpi-icon"><mat-icon>trending_up</mat-icon></div>
-            <div class="kpi-info">
-              <span class="kpi-label">Ingresos Totales</span>
-              <h3 class="kpi-value">
+      <div *ngIf="!isLoading" class="master-grid">
+        <div class="left-panel">
+          <div class="kpi-row">
+            <div class="dash-card kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Ingresos Totales</span>
+                <div class="kpi-icon icon-green">
+                  <mat-icon>trending_up</mat-icon>
+                </div>
+              </div>
+              <h2 class="kpi-value">
                 ${{ kpis.total_income | number }} <small>{{ currency }}</small>
-              </h3>
+              </h2>
             </div>
-          </div>
-
-          <div class="kpi-card expense">
-            <div class="kpi-icon"><mat-icon>trending_down</mat-icon></div>
-            <div class="kpi-info">
-              <span class="kpi-label">Gastos Totales</span>
-              <h3 class="kpi-value">
+            <div class="dash-card kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Gastos Totales</span>
+                <div class="kpi-icon icon-red">
+                  <mat-icon>trending_down</mat-icon>
+                </div>
+              </div>
+              <h2 class="kpi-value">
                 ${{ kpis.total_expenses | number }}
                 <small>{{ currency }}</small>
-              </h3>
+              </h2>
             </div>
-          </div>
-
-          <div
-            class="kpi-card cashflow"
-            [ngClass]="{ negative: kpis.cash_flow < 0 }"
-          >
-            <div class="kpi-icon">
-              <mat-icon>account_balance_wallet</mat-icon>
-            </div>
-            <div class="kpi-info">
-              <span class="kpi-label">Flujo de Caja</span>
-              <h3 class="kpi-value">
+            <div class="dash-card kpi-card">
+              <div class="kpi-header">
+                <span class="kpi-title">Flujo de Caja</span>
+                <div class="kpi-icon icon-blue">
+                  <mat-icon>account_balance_wallet</mat-icon>
+                </div>
+              </div>
+              <h2
+                class="kpi-value"
+                [ngClass]="{ 'text-danger': kpis.cash_flow < 0 }"
+              >
                 ${{ kpis.cash_flow | number }} <small>{{ currency }}</small>
-              </h3>
+              </h2>
+            </div>
+          </div>
+
+          <div class="charts-row">
+            <div class="dash-card area-chart">
+              <h3 class="card-title">Dinámica de Caja</h3>
+              <apx-chart
+                *ngIf="areaChartOptions"
+                [series]="areaChartOptions.series"
+                [chart]="areaChartOptions.chart"
+                [xaxis]="areaChartOptions.xaxis"
+                [yaxis]="areaChartOptions.yaxis"
+                [colors]="areaChartOptions.colors"
+                [stroke]="areaChartOptions.stroke"
+                [fill]="areaChartOptions.fill"
+                [dataLabels]="areaChartOptions.dataLabels"
+                [grid]="areaChartOptions.grid"
+              ></apx-chart>
+            </div>
+            <div class="dash-card donut-chart">
+              <h3 class="card-title">Categorías</h3>
+              <apx-chart
+                *ngIf="donutChartOptions"
+                [series]="donutChartOptions.series"
+                [chart]="donutChartOptions.chart"
+                [labels]="donutChartOptions.labels"
+                [colors]="donutChartOptions.colors"
+                [plotOptions]="donutChartOptions.plotOptions"
+                [dataLabels]="donutChartOptions.dataLabels"
+                [legend]="donutChartOptions.legend"
+              ></apx-chart>
             </div>
           </div>
         </div>
 
-        <div *ngIf="!hasData" class="empty-state">
-          <img
-            src="assets/images/empty-chart.svg"
-            alt="Sin datos"
-            class="empty-img"
-            onerror="this.style.display = 'none'"
-          />
-          <mat-icon class="empty-icon fallback">insert_chart_outlined</mat-icon>
-          <h2>Aún no hay datos para analizar</h2>
-          <p>
-            Kroot necesita registros de ingresos o gastos para comenzar a
-            generar gráficas y alertas automáticas.
-          </p>
-          <button mat-flat-button class="btn-primary">
-            Registrar Movimiento
-          </button>
-        </div>
+        <div class="right-panel">
+          <div class="dash-card semaforo-card">
+            <div class="status-header">
+              <mat-icon class="pulse-icon">insights</mat-icon>
+              <h3 class="card-title">
+                Semáforo de Estado General de la Empresa
+              </h3>
+            </div>
 
-        <div *ngIf="hasData" class="chart-card">
-          <div class="chart-header">
-            <h3>Ingresos vs Gastos</h3>
+            <div
+              class="status-indicator"
+              [ngClass]="
+                kpis.total_income === 0
+                  ? 'neutral'
+                  : kpis.cash_flow >= 0
+                    ? 'success'
+                    : 'danger'
+              "
+            >
+              <div class="status-dot"></div>
+              <h4>
+                {{
+                  kpis.total_income === 0
+                    ? "A la espera de datos"
+                    : kpis.cash_flow >= 0
+                      ? "Saludable y Rentable"
+                      : "Alerta de Pérdidas"
+                }}
+              </h4>
+            </div>
+
+            <p class="ai-text" *ngIf="kpis.total_income === 0">
+              Registra tus primeros movimientos financieros para activar el
+              análisis predictivo de la IA de Kroot.
+            </p>
+            <p
+              class="ai-text"
+              *ngIf="kpis.total_income > 0 && kpis.cash_flow >= 0"
+            >
+              Tu flujo de caja es positivo. Los ingresos mantienen un margen
+              operativo saludable frente a los gastos.
+            </p>
+            <p class="ai-text text-danger" *ngIf="kpis.cash_flow < 0">
+              <strong>Alerta:</strong> Los egresos han superado los ingresos.
+              Sugerimos revisar la estructura de costos operativos.
+            </p>
           </div>
-          <apx-chart
-            [series]="chartOptions.series"
-            [chart]="chartOptions.chart"
-            [dataLabels]="chartOptions.dataLabels"
-            [plotOptions]="chartOptions.plotOptions"
-            [yaxis]="chartOptions.yaxis"
-            [xaxis]="chartOptions.xaxis"
-            [fill]="chartOptions.fill"
-            [tooltip]="chartOptions.tooltip"
-            [stroke]="chartOptions.stroke"
-          >
-          </apx-chart>
         </div>
       </div>
     </div>

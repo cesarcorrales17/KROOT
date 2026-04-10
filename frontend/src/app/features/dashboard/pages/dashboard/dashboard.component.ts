@@ -2,13 +2,13 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 
-// MATERIAL DESIGN & GRÁFICOS
 import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NgApexchartsModule } from 'ng-apexcharts';
 
-// SERVICIO
 import { AuthService } from '../../../../features/auth/services/auth.service';
 
 @Component({
@@ -18,27 +18,23 @@ import { AuthService } from '../../../../features/auth/services/auth.service';
     CommonModule,
     RouterLink,
     MatIconModule,
-    MatProgressSpinnerModule,
     MatButtonModule,
-    NgApexchartsModule, // <-- IMPORTANTE AÑADIRLO AQUÍ
+    MatSelectModule,
+    MatFormFieldModule,
+    MatProgressSpinnerModule,
+    NgApexchartsModule,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   isLoading = true;
-  hasData = false;
   currency = 'COP';
+  selectedPeriod = 'this_month';
 
-  // KPIs inicializados en cero
-  kpis = {
-    total_income: 0,
-    total_expenses: 0,
-    cash_flow: 0,
-  };
-
-  // Variable que guardará la configuración del gráfico
-  public chartOptions: any;
+  kpis = { total_income: 0, total_expenses: 0, cash_flow: 0 };
+  public areaChartOptions: any;
+  public donutChartOptions: any;
 
   private authService = inject(AuthService);
 
@@ -49,15 +45,9 @@ export class DashboardComponent implements OnInit {
   loadDashboardSummary(): void {
     this.authService.getDashboardSummary().subscribe({
       next: (data) => {
-        this.hasData = data.has_data;
         this.currency = data.currency;
         this.kpis = data.kpis;
-
-        // Si el usuario ya tiene registros, dibujamos la gráfica
-        if (this.hasData) {
-          this.initChart(data.charts);
-        }
-
+        this.buildCharts(data.charts);
         this.isLoading = false;
       },
       error: (err) => {
@@ -67,48 +57,73 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  // Configuración de ApexCharts
-  initChart(chartData: any): void {
-    this.chartOptions = {
+  buildCharts(chartData: any): void {
+    // GRÁFICO 1: ÁREA (Tendencia de Ingresos vs Gastos)
+    this.areaChartOptions = {
       series: [
         {
           name: 'Ingresos',
-          data: chartData.income_data,
-          color: '#10b981', // Verde esmeralda
+          data: chartData.income_data || [0, 0, 0, 0, 0, 0, 0],
         },
         {
           name: 'Gastos',
-          data: chartData.expense_data,
-          color: '#ef4444', // Rojo
+          data: chartData.expense_data || [0, 0, 0, 0, 0, 0, 0],
         },
       ],
       chart: {
-        type: 'bar',
+        type: 'area',
         height: 350,
         fontFamily: 'Inter, sans-serif',
         toolbar: { show: false },
       },
-      plotOptions: {
-        bar: {
-          horizontal: false,
-          columnWidth: '55%',
-          borderRadius: 4,
+      colors: ['#10b981', '#ef4444'], // Verde y Rojo
+      dataLabels: { enabled: false },
+      stroke: { curve: 'smooth', width: 2 },
+      fill: {
+        type: 'gradient',
+        gradient: {
+          shadeIntensity: 1,
+          opacityFrom: 0.4,
+          opacityTo: 0.05,
+          stops: [0, 90, 100],
         },
       },
-      dataLabels: { enabled: false },
-      stroke: { show: true, width: 2, colors: ['transparent'] },
-      xaxis: { categories: chartData.labels },
-      yaxis: {
-        title: { text: `$ (${this.currency})` },
+      xaxis: {
+        categories: chartData.labels || [
+          'Lun',
+          'Mar',
+          'Mie',
+          'Jue',
+          'Vie',
+          'Sab',
+          'Dom',
+        ],
+        axisBorder: { show: false },
       },
-      fill: { opacity: 1 },
-      tooltip: {
-        y: {
-          formatter: (val: number) => {
-            return '$' + val.toLocaleString();
+      yaxis: {
+        labels: { formatter: (val: number) => '$' + val.toLocaleString() },
+      },
+      grid: { strokeDashArray: 4, borderColor: '#e2e8f0' },
+    };
+
+    // GRÁFICO 2: DONA (Categorías) - En 0 por ahora
+    this.donutChartOptions = {
+      series: [0, 0, 0], // Vacío intencionalmente
+      labels: ['Categoría A', 'Categoría B', 'Categoría C'],
+      chart: { type: 'donut', height: 300, fontFamily: 'Inter, sans-serif' },
+      colors: ['#e2e8f0', '#cbd5e1', '#94a3b8'], // Colores grises hasta que haya datos reales
+      plotOptions: {
+        pie: {
+          donut: {
+            labels: {
+              show: true,
+              total: { show: true, label: 'Sin datos', color: '#94a3b8' },
+            },
           },
         },
       },
+      dataLabels: { enabled: false },
+      legend: { position: 'bottom' },
     };
   }
 

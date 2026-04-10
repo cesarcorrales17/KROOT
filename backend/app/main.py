@@ -466,30 +466,32 @@ def get_dashboard_summary(
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
     # 2. Buscamos las transacciones
-    # Por ahora traemos todo, en el futuro filtraremos por el mes actual
+    # NOTA TECH LEAD: Asegúrate de que el modelo se llame 'Transaction' o cambialo a 'Sale' si estás usando la tabla que creamos ayer.
     transactions = db.query(models.Transaction).filter(models.Transaction.business_id == business.id).all()
     
-    # Si no hay transacciones, devolvemos el estado vacío (Empty State)
+    # ARRAY BASE: Días de la semana para que la gráfica tenga un eje X temporal real
+    dias_semana = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Hoy"]
+    
+    # Si no hay transacciones, devolvemos el estado vacío pero con el esqueleto de la gráfica
     if not transactions:
         return {
             "has_data": False,
             "currency": business.currency or "COP",
             "kpis": {"total_income": 0.0, "total_expenses": 0.0, "cash_flow": 0.0},
             "charts": {
-                "labels": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
-                "income_data": [0, 0, 0, 0],
-                "expense_data": [0, 0, 0, 0]
+                "labels": dias_semana,
+                "income_data": [0, 0, 0, 0, 0, 0, 0],
+                "expense_data": [0, 0, 0, 0, 0, 0, 0]
             }
         }
 
-    # 3. Calcular KPIs reales (Lógica de Negocio)
+    # 3. Calcular KPIs reales
     total_inc = sum(t.amount for t in transactions if t.transaction_type == 'ingreso')
     total_exp = sum(t.amount for t in transactions if t.transaction_type == 'gasto')
     
-    # 4. Agrupar para los Gráficos (Agrupación simple simulada por ahora)
-    # Aquí iría la lógica compleja de agrupar por mes/día usando itertools o pandas
-    # Para arrancar, enviaremos los totales para asegurar que la gráfica pinte algo.
-    
+    # 4. Agrupar para los Gráficos
+    # TODO: En el futuro esto agrupará por día real. 
+    # Por ahora, simulamos la curva poniendo el total en el día "Hoy" y el resto en 0.
     return {
         "has_data": True,
         "currency": business.currency or "COP",
@@ -499,9 +501,9 @@ def get_dashboard_summary(
             "cash_flow": total_inc - total_exp
         },
         "charts": {
-            "labels": ["Actual"], # Etiquetas del eje X
-            "income_data": [total_inc],
-            "expense_data": [total_exp]
+            "labels": dias_semana, 
+            "income_data": [0, 0, 0, 0, 0, 0, total_inc],
+            "expense_data": [0, 0, 0, 0, 0, 0, total_exp]
         }
     }
     
