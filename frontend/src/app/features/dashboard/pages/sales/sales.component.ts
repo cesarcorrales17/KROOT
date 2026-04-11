@@ -46,11 +46,10 @@ export class SalesComponent implements OnInit {
   successMessage = '';
   errorMessage = '';
 
-  summary: any = null;
-  isLoadingSummary = true;
   currentCurrency = 'COP';
+  todaySalesCount = 0;
 
-  // Nuevas opciones para hacer el formulario robusto
+  // ── Opciones de selección ────────────────────────────────────────────────
   categories = [
     'Producto Físico',
     'Servicio',
@@ -58,44 +57,114 @@ export class SalesComponent implements OnInit {
     'Suscripción',
     'Otro',
   ];
+
   paymentMethods = ['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'];
+
+  clientTypes = [
+    'Persona Natural',
+    'Empresa',
+    'Cliente Recurrente',
+    'Cliente Nuevo',
+    'Otro',
+  ];
+
+  paymentStatuses = [
+    { value: 'paid', label: 'Pagado' },
+    { value: 'pending', label: 'Pendiente' },
+    { value: 'partial', label: 'Pago Parcial' },
+    { value: 'cancelled', label: 'Cancelado' },
+  ];
 
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
 
   constructor() {
+    // Hora actual en formato HH:MM para el campo sale_time
+    const now = new Date();
+    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
     this.salesForm = this.fb.group({
-      amount: ['', [Validators.required, Validators.min(1)]],
-      period_type: ['monthly', Validators.required],
-      period_date: [new Date(), Validators.required], // Inicia con fecha actual
+      // Datos del cliente
+      client_name: [''],
+      client_type: [''],
+      client_contact: [''],
+      client_document: [''],
+
+      // Detalle del producto/servicio
       category: [''],
-      payment_method: [''],
+      product_name: [''],
+      quantity: [1, [Validators.required, Validators.min(1)]],
+      unit_price: [0, [Validators.required, Validators.min(0)]],
       description: [''],
+
+      // Información financiera
+      amount: [
+        { value: 0, disabled: false },
+        [Validators.required, Validators.min(1)],
+      ],
+      payment_method: [''],
+      payment_status: ['paid'],
+      period_type: ['monthly', Validators.required],
+
+      // Datos de control
+      period_date: [new Date(), Validators.required],
+      sale_time: [hhmm],
+      invoice_ref: [''],
     });
   }
 
   ngOnInit(): void {
-    this.loadSummary('monthly');
+    this.loadTodaySalesCount();
   }
 
-  loadSummary(periodType: string): void {
-    this.isLoadingSummary = true;
-    this.authService.getSalesSummary(periodType).subscribe({
-      next: (data) => {
-        this.summary = data;
-        this.isLoadingSummary = false;
-      },
-      error: (err) => {
-        console.error('Error cargando resumen', err);
-        this.isLoadingSummary = false;
-      },
-    });
+  // ── Cálculo automático del monto ─────────────────────────────────────────
+  recalculateAmount(): void {
+    const qty = parseFloat(this.salesForm.get('quantity')?.value) || 0;
+    const price = parseFloat(this.salesForm.get('unit_price')?.value) || 0;
+    this.salesForm.patchValue({ amount: qty * price }, { emitEvent: false });
   }
 
-  onPeriodChange(event: any): void {
-    this.loadSummary(event.value);
+  // ── Helpers para el panel de resumen ─────────────────────────────────────
+  getClientInitials(): string {
+    const name: string = this.salesForm.get('client_name')?.value || '';
+    return name
+      .split(' ')
+      .slice(0, 2)
+      .map((w: string) => w.charAt(0).toUpperCase())
+      .join('');
   }
 
+  getPaymentStatusLabel(): string {
+    const val = this.salesForm.get('payment_status')?.value;
+    return this.paymentStatuses.find((s) => s.value === val)?.label ?? '';
+  }
+
+  getPaymentStatusClass(): string {
+    const map: Record<string, string> = {
+      paid: 'status-paid',
+      pending: 'status-pending',
+      partial: 'status-partial',
+      cancelled: 'status-cancelled',
+    };
+    return map[this.salesForm.get('payment_status')?.value] ?? 'status-default';
+  }
+
+  getPaymentStatusIcon(): string {
+    const map: Record<string, string> = {
+      paid: 'check_circle',
+      pending: 'schedule',
+      partial: 'timelapse',
+      cancelled: 'cancel',
+    };
+    return map[this.salesForm.get('payment_status')?.value] ?? 'info';
+  }
+
+  // ── Carga de ventas de hoy (conectar cuando exista el endpoint) ───────────
+  loadTodaySalesCount(): void {
+    this.todaySalesCount = 0;
+  }
+
+  // ── Envío del formulario ──────────────────────────────────────────────────
   onSubmit(): void {
     if (this.salesForm.invalid) {
       this.salesForm.markAllAsTouched();
@@ -106,24 +175,35 @@ export class SalesComponent implements OnInit {
     this.successMessage = '';
     this.errorMessage = '';
 
-    // Clonamos los datos para formatear la fecha correctamente para FastAPI (YYYY-MM-DD)
     const formValue = { ...this.salesForm.value };
+
+    // Formatea la fecha a YYYY-MM-DD para FastAPI
     if (formValue.period_date) {
       const d = new Date(formValue.period_date);
       formValue.period_date = d.toISOString().split('T')[0];
     }
 
     this.authService.createSale(formValue).subscribe({
-      next: (response) => {
+      next: () => {
         this.isSaving = false;
         this.successMessage = 'Venta registrada correctamente.';
+        this.todaySalesCount++;
 
-        this.loadSummary(this.salesForm.get('period_type')?.value);
+        // Limpia solo los campos variables; conserva fecha, hora y período
+        const now = new Date();
+        const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
-        // Limpiamos solo los campos variables, dejamos la fecha y tipo iguales
         this.salesForm.patchValue({
-          amount: '',
+          client_name: '',
+          client_contact: '',
+          client_document: '',
+          product_name: '',
+          quantity: 1,
+          unit_price: 0,
+          amount: 0,
+          invoice_ref: '',
           description: '',
+          sale_time: hhmm,
         });
 
         setTimeout(() => (this.successMessage = ''), 4000);

@@ -32,63 +32,87 @@
 
     <div class="content-wrapper">
       <div class="split-layout">
+        <!-- ===== FORMULARIO PRINCIPAL ===== -->
         <div class="form-section">
-          <div class="settings-card">
-            <div class="card-header">
-              <mat-icon>add_shopping_cart</mat-icon>
-              <div>
-                <h2>Nueva Venta</h2>
-                <p>Ingresa los detalles de la venta para tus estadísticas.</p>
+          <div *ngIf="successMessage" class="alert success-alert">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ successMessage }}</span>
+          </div>
+          <div *ngIf="errorMessage" class="alert error-alert">
+            <mat-icon>error</mat-icon>
+            <span>{{ errorMessage }}</span>
+          </div>
+
+          <!-- El form lleva id="sales-form" para que el botón externo lo pueda hacer submit -->
+          <form
+            [formGroup]="salesForm"
+            (ngSubmit)="onSubmit()"
+            id="sales-form"
+            class="settings-form"
+          >
+            <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>person_outline</mat-icon>
+                <div>
+                  <h2>Datos del Cliente</h2>
+                  <p>Información básica de quien realiza la compra.</p>
+                </div>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Nombre del Cliente</mat-label>
+                  <input
+                    matInput
+                    formControlName="client_name"
+                    placeholder="Ej. Juan Pérez"
+                  />
+                  <mat-icon matPrefix>badge</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Tipo de Cliente</mat-label>
+                  <mat-select formControlName="client_type">
+                    <mat-option *ngFor="let ct of clientTypes" [value]="ct">{{
+                      ct
+                    }}</mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>group</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Teléfono / Email (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="client_contact"
+                    placeholder="Ej. +57 300 000 0000"
+                  />
+                  <mat-icon matPrefix>contact_phone</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Documento de Identidad (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="client_document"
+                    placeholder="Ej. 1.020.000.000"
+                  />
+                  <mat-icon matPrefix>fingerprint</mat-icon>
+                </mat-form-field>
               </div>
             </div>
 
-            <div *ngIf="successMessage" class="alert success-alert">
-              <mat-icon>check_circle</mat-icon>
-              <span>{{ successMessage }}</span>
-            </div>
-            <div *ngIf="errorMessage" class="alert error-alert">
-              <mat-icon>error</mat-icon>
-              <span>{{ errorMessage }}</span>
-            </div>
-
-            <form
-              [formGroup]="salesForm"
-              (ngSubmit)="onSubmit()"
-              class="settings-form"
-            >
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Monto Vendido</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="amount"
-                    placeholder="Ej. 1500000"
-                  />
-                  <mat-icon matPrefix>attach_money</mat-icon>
-                  <mat-error
-                    *ngIf="salesForm.get('amount')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Fecha de la Venta</mat-label>
-                  <input
-                    matInput
-                    [matDatepicker]="picker"
-                    formControlName="period_date"
-                  />
-                  <mat-datepicker-toggle
-                    matIconSuffix
-                    [for]="picker"
-                  ></mat-datepicker-toggle>
-                  <mat-datepicker #picker></mat-datepicker>
-                  <mat-error
-                    *ngIf="salesForm.get('period_date')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                </mat-form-field>
+            <!-- SECCIÓN 2: DETALLE DEL PRODUCTO / SERVICIO -->
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>inventory_2</mat-icon>
+                <div>
+                  <h2>Detalle del Producto o Servicio</h2>
+                  <p>Especifica qué se vendió y en qué cantidad.</p>
+                </div>
               </div>
 
               <div class="form-row grid-2">
@@ -100,6 +124,105 @@
                     }}</mat-option>
                   </mat-select>
                   <mat-icon matPrefix>category</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Nombre del Producto / Servicio</mat-label>
+                  <input
+                    matInput
+                    formControlName="product_name"
+                    placeholder="Ej. Reparación pantalla"
+                  />
+                  <mat-icon matPrefix>sell</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Cantidad</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="quantity"
+                    placeholder="1"
+                    (input)="recalculateAmount()"
+                  />
+                  <mat-icon matPrefix>pin</mat-icon>
+                  <mat-error
+                    *ngIf="salesForm.get('quantity')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                  <mat-error *ngIf="salesForm.get('quantity')?.hasError('min')"
+                    >Mínimo 1</mat-error
+                  >
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Precio Unitario</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="unit_price"
+                    placeholder="Ej. 150000"
+                    (input)="recalculateAmount()"
+                  />
+                  <mat-icon matPrefix>attach_money</mat-icon>
+                  <mat-error
+                    *ngIf="salesForm.get('unit_price')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                  <mat-error
+                    *ngIf="salesForm.get('unit_price')?.hasError('min')"
+                    >Mínimo 0</mat-error
+                  >
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label
+                    >Descripción del Producto / Servicio (Opcional)</mat-label
+                  >
+                  <textarea
+                    matInput
+                    formControlName="description"
+                    placeholder="Ej. Cambio de pantalla Samsung A52, incluye mano de obra..."
+                    rows="3"
+                  ></textarea>
+                  <mat-icon matPrefix>notes</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <!-- SECCIÓN 3: INFORMACIÓN FINANCIERA Y DE PAGO -->
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>payments</mat-icon>
+                <div>
+                  <h2>Información Financiera y de Pago</h2>
+                  <p>Detalles del cobro y método de pago utilizado.</p>
+                </div>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Monto Total</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="amount"
+                    placeholder="Se calcula automáticamente"
+                    readonly
+                  />
+                  <mat-icon matPrefix>monetization_on</mat-icon>
+                  <mat-hint>Calculado: cantidad × precio unitario</mat-hint>
+                  <mat-error
+                    *ngIf="salesForm.get('amount')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                  <mat-error *ngIf="salesForm.get('amount')?.hasError('min')"
+                    >Debe ser mayor a 0</mat-error
+                  >
                 </mat-form-field>
 
                 <mat-form-field appearance="outline" class="full-width">
@@ -117,97 +240,223 @@
 
               <div class="form-row grid-2">
                 <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Comparativa Base</mat-label>
-                  <mat-select
-                    formControlName="period_type"
-                    (selectionChange)="onPeriodChange($event)"
-                  >
+                  <mat-label>Estado del Pago</mat-label>
+                  <mat-select formControlName="payment_status">
+                    <mat-option
+                      *ngFor="let ps of paymentStatuses"
+                      [value]="ps.value"
+                      >{{ ps.label }}</mat-option
+                    >
+                  </mat-select>
+                  <mat-icon matPrefix>check_circle_outline</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Período para Estadísticas</mat-label>
+                  <mat-select formControlName="period_type">
                     <mat-option value="weekly">Semanal</mat-option>
                     <mat-option value="monthly">Mensual</mat-option>
                   </mat-select>
                   <mat-icon matPrefix>date_range</mat-icon>
                 </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Notas (Opcional)</mat-label>
-                  <input
-                    matInput
-                    formControlName="description"
-                    placeholder="Ej. Cliente solicitó factura..."
-                  />
-                  <mat-icon matPrefix>notes</mat-icon>
-                </mat-form-field>
               </div>
-
-              <div class="form-actions">
-                <button
-                  mat-flat-button
-                  type="submit"
-                  class="btn-save"
-                  [disabled]="isSaving || salesForm.invalid"
-                >
-                  <span *ngIf="!isSaving">Registrar Ingreso</span>
-                  <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="summary-section">
-          <div class="settings-card comparative-card">
-            <h3>
-              Comparativa
-              {{
-                salesForm.get("period_type")?.value === "monthly"
-                  ? "Mensual"
-                  : "Semanal"
-              }}
-            </h3>
-
-            <div *ngIf="isLoadingSummary" class="loading-state-small">
-              <mat-spinner diameter="30"></mat-spinner>
             </div>
 
-            <div *ngIf="!isLoadingSummary && summary">
-              <div class="summary-item main">
-                <span class="label">Período Actual</span>
-                <span class="value"
-                  >${{ summary.current_period_amount | number }}
-                  <small>{{ currentCurrency }}</small></span
-                >
+            <!-- SECCIÓN 4: DATOS DE CONTROL -->
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>tune</mat-icon>
+                <div>
+                  <h2>Datos de Control</h2>
+                  <p>Fecha, hora y referencia del comprobante.</p>
+                </div>
               </div>
 
-              <div class="summary-item secondary">
-                <span class="label">Período Anterior</span>
-                <span class="value"
-                  >${{ summary.previous_period_amount | number }}</span
-                >
+              <div class="form-row grid-3">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Fecha de la Venta</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="picker"
+                    formControlName="period_date"
+                  />
+                  <mat-datepicker-toggle
+                    matIconSuffix
+                    [for]="picker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                  <mat-error
+                    *ngIf="salesForm.get('period_date')?.hasError('required')"
+                    >Requerido</mat-error
+                  >
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Hora de la Venta</mat-label>
+                  <input matInput type="time" formControlName="sale_time" />
+                  <mat-icon matPrefix>schedule</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>N.° Factura / Comprobante (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="invoice_ref"
+                    placeholder="Ej. FAC-2025-001"
+                  />
+                  <mat-icon matPrefix>receipt_long</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <!-- ===== PANEL DE RESUMEN ===== -->
+        <div class="summary-section">
+          <div class="summary-sticky">
+            <!-- RESUMEN DE VENTA -->
+            <div class="settings-card summary-card">
+              <div class="summary-card-header">
+                <mat-icon>receipt</mat-icon>
+                <h3>Resumen de Venta</h3>
               </div>
 
-              <div class="trend-indicator" [ngClass]="summary.trend">
-                <mat-icon *ngIf="summary.trend === 'up'">trending_up</mat-icon>
-                <mat-icon *ngIf="summary.trend === 'down'"
-                  >trending_down</mat-icon
-                >
-                <mat-icon *ngIf="summary.trend === 'neutral'"
-                  >trending_flat</mat-icon
-                >
+              <div
+                class="summary-client-info"
+                *ngIf="salesForm.get('client_name')?.value"
+              >
+                <div class="summary-avatar">{{ getClientInitials() }}</div>
+                <div>
+                  <p class="summary-client-name">
+                    {{ salesForm.get("client_name")?.value }}
+                  </p>
+                  <p class="summary-client-type">
+                    {{ salesForm.get("client_type")?.value || "Sin tipo" }}
+                  </p>
+                </div>
+              </div>
 
-                <div class="trend-text">
-                  <span class="pct">{{ summary.difference_percentage }}%</span>
-                  <span class="desc">
-                    {{
-                      summary.trend === "up"
-                        ? "más que el período anterior"
-                        : summary.trend === "down"
-                          ? "menos que el período anterior"
-                          : "igual al período anterior"
-                    }}
+              <div class="summary-divider"></div>
+
+              <div class="summary-line-items">
+                <div
+                  class="summary-line"
+                  *ngIf="salesForm.get('product_name')?.value"
+                >
+                  <span class="line-label">Producto/Servicio</span>
+                  <span class="line-value line-product">{{
+                    salesForm.get("product_name")?.value
+                  }}</span>
+                </div>
+                <div class="summary-line">
+                  <span class="line-label">Cantidad</span>
+                  <span class="line-value">{{
+                    salesForm.get("quantity")?.value || 1
+                  }}</span>
+                </div>
+                <div class="summary-line">
+                  <span class="line-label">Precio Unitario</span>
+                  <span class="line-value"
+                    >{{ salesForm.get("unit_price")?.value || 0 | number }}
+                    {{ currentCurrency }}</span
+                  >
+                </div>
+              </div>
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-total-block">
+                <span class="total-label">TOTAL A PAGAR</span>
+                <span class="total-value">
+                  {{ salesForm.get("amount")?.value || 0 | number }}
+                  <small>{{ currentCurrency }}</small>
+                </span>
+              </div>
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-meta">
+                <div
+                  class="meta-item"
+                  *ngIf="salesForm.get('payment_method')?.value"
+                >
+                  <mat-icon>wallet</mat-icon>
+                  <span>{{ salesForm.get("payment_method")?.value }}</span>
+                </div>
+                <div
+                  class="meta-item"
+                  *ngIf="salesForm.get('payment_status')?.value"
+                >
+                  <mat-icon>check_circle_outline</mat-icon>
+                  <span>{{ getPaymentStatusLabel() }}</span>
+                </div>
+                <div
+                  class="meta-item"
+                  *ngIf="salesForm.get('period_date')?.value"
+                >
+                  <mat-icon>event</mat-icon>
+                  <span>{{
+                    salesForm.get("period_date")?.value | date: "dd/MM/yyyy"
+                  }}</span>
+                </div>
+                <div
+                  class="meta-item"
+                  *ngIf="salesForm.get('sale_time')?.value"
+                >
+                  <mat-icon>schedule</mat-icon>
+                  <span>{{ salesForm.get("sale_time")?.value }}</span>
+                </div>
+                <div
+                  class="meta-item"
+                  *ngIf="salesForm.get('invoice_ref')?.value"
+                >
+                  <mat-icon>receipt_long</mat-icon>
+                  <span>{{ salesForm.get("invoice_ref")?.value }}</span>
+                </div>
+              </div>
+
+              <div
+                class="summary-status-badge"
+                [ngClass]="getPaymentStatusClass()"
+              >
+                <mat-icon>{{ getPaymentStatusIcon() }}</mat-icon>
+                {{ getPaymentStatusLabel() }}
+              </div>
+            </div>
+
+            <!-- MINI STATS -->
+            <div class="settings-card mini-stats-card">
+              <div class="mini-stat">
+                <mat-icon>today</mat-icon>
+                <div>
+                  <span class="mini-stat-label">Ventas hoy</span>
+                  <span class="mini-stat-value">{{ todaySalesCount }}</span>
+                </div>
+              </div>
+              <div class="mini-stat-divider"></div>
+              <div class="mini-stat">
+                <mat-icon>radio_button_checked</mat-icon>
+                <div>
+                  <span class="mini-stat-label">Estado sistema</span>
+                  <span class="mini-stat-value status-active">
+                    <span class="status-dot"></span>Activo
                   </span>
                 </div>
               </div>
             </div>
+
+            <!-- BOTÓN REGISTRAR — fuera del <form> pero vinculado por form="sales-form" -->
+            <button
+              mat-flat-button
+              type="submit"
+              form="sales-form"
+              class="btn-register-sticky"
+              [disabled]="isSaving || salesForm.invalid"
+            >
+              <mat-icon *ngIf="!isSaving">add_circle_outline</mat-icon>
+              <span *ngIf="!isSaving">Registrar Venta</span>
+              <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+            </button>
           </div>
         </div>
       </div>

@@ -93,18 +93,36 @@ class Transaction(Base):
     
 class Sale(Base):
     __tablename__ = "sales"
-
     id = Column(Integer, primary_key=True, index=True)
     business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
-    
-    amount = Column(Float, nullable=False)
-    period_type = Column(String, nullable=False)
-    period_date = Column(Date, nullable=False)
-    
-    category = Column(String, nullable=True)        
-    payment_method = Column(String, nullable=True)  
-    description = Column(String, nullable=True)     
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
-    business = relationship("Business", backref="sales")
+    # ── Campos originales ──────────────────────────────────────────────────
+    amount          = Column(Float,   nullable=False)
+    period_type     = Column(String,  nullable=False)   # 'monthly' | 'weekly'
+    period_date     = Column(Date,    nullable=False)
+    category        = Column(String,  nullable=True)
+    payment_method  = Column(String,  nullable=True)
+    description     = Column(String,  nullable=True)
+
+    # ── Datos del cliente ─────────────────────────────────────────────────
+    client_name     = Column(String,  nullable=True)
+    client_type     = Column(String,  nullable=True)    # 'Persona Natural', 'Empresa', etc.
+    client_contact  = Column(String,  nullable=True)    # teléfono o email
+    client_document = Column(String,  nullable=True)    # cédula / NIT
+
+    # ── Detalle del producto/servicio ─────────────────────────────────────
+    product_name    = Column(String,  nullable=True)
+    quantity        = Column(Float,   nullable=True)    # Float para permitir fracciones
+    unit_price      = Column(Float,   nullable=True)
+
+    # ── Información financiera ────────────────────────────────────────────
+    payment_status  = Column(String,  nullable=True)    # 'paid' | 'pending' | 'partial' | 'cancelled'
+    invoice_ref     = Column(String,  nullable=True)    # número de factura / comprobante
+
+    # ── Control y logística ───────────────────────────────────────────────
+    sales_channel   = Column(String,  nullable=True)    # 'Presencial', 'WhatsApp', etc.
+    internal_notes  = Column(String,  nullable=True)
+    sale_time       = Column(String,  nullable=True)    # hora de la venta HH:MM
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    business   = relationship("Business", backref="sales")
