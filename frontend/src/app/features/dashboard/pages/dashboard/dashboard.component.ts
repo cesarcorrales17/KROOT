@@ -1,6 +1,8 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
 
 import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
@@ -10,6 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NgApexchartsModule } from 'ng-apexcharts';
 
 import { AuthService } from '../../../../features/auth/services/auth.service';
+import { DashboardService } from './dashboard.service'; // <--- Ruta corregida
 
 @Component({
   selector: 'app-dashboard',
@@ -17,6 +20,7 @@ import { AuthService } from '../../../../features/auth/services/auth.service';
   imports: [
     CommonModule,
     RouterLink,
+    FormsModule,
     MatIconModule,
     MatButtonModule,
     MatSelectModule,
@@ -31,52 +35,88 @@ export class DashboardComponent implements OnInit {
   isLoading = true;
   currency = 'COP';
   selectedPeriod = 'this_month';
+  isMobileMenuOpen = false;
 
   kpis = { total_income: 0, total_expenses: 0, cash_flow: 0 };
+  operationalKpis = {
+    units_sold_today: 0,
+    low_stock_alerts: 0,
+    active_branches: 1,
+  };
+  topProducts: any[] = [];
+
   public areaChartOptions: any;
   public donutChartOptions: any;
 
   private authService = inject(AuthService);
+  private dashboardService = inject(DashboardService);
 
   ngOnInit(): void {
-    this.loadDashboardSummary();
+    this.loadDashboardData();
   }
 
-  loadDashboardSummary(): void {
-    this.authService.getDashboardSummary().subscribe({
-      next: (data) => {
-        this.currency = data.currency;
-        this.kpis = data.kpis;
-        this.buildCharts(data.charts);
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+
+  onPeriodChange(period: string): void {
+    this.selectedPeriod = period;
+    this.loadDashboardData();
+  }
+
+  loadDashboardData(): void {
+    this.isLoading = true;
+
+    forkJoin({
+      financial: this.dashboardService.getFinancialMetrics(this.selectedPeriod),
+      operational: this.dashboardService.getOperationalMetrics(
+        this.selectedPeriod,
+      ),
+    }).subscribe({
+      next: (result) => {
+        this.kpis = {
+          total_income: result.financial.total_income || 0,
+          total_expenses: result.financial.total_expenses || 0,
+          cash_flow: result.financial.cash_flow || 0,
+        };
+
+        this.operationalKpis = {
+          units_sold_today: result.operational.units_sold_today || 0,
+          low_stock_alerts: result.operational.low_stock_alerts || 0,
+          active_branches: result.operational.active_branches || 1,
+        };
+        this.topProducts = result.operational.top_products || [];
+
+        this.initCharts(result.financial);
         this.isLoading = false;
       },
       error: (err) => {
-        console.error('Error al cargar el dashboard', err);
+        console.error('Error al cargar datos del dashboard', err);
+        // Si el backend no está listo, evitamos que la pantalla se rompa
+        this.initCharts({
+          chart_labels: [],
+          chart_incomes: [],
+          chart_expenses: [],
+        });
         this.isLoading = false;
       },
     });
   }
 
-  buildCharts(chartData: any): void {
-    // GRÁFICO 1: ÁREA (Tendencia de Ingresos vs Gastos)
+  initCharts(financialData: any): void {
     this.areaChartOptions = {
       series: [
-        {
-          name: 'Ingresos',
-          data: chartData.income_data || [0, 0, 0, 0, 0, 0, 0],
-        },
-        {
-          name: 'Gastos',
-          data: chartData.expense_data || [0, 0, 0, 0, 0, 0, 0],
-        },
+        { name: 'Ingresos', data: financialData.chart_incomes || [] },
+        { name: 'Egresos', data: financialData.chart_expenses || [] },
       ],
       chart: {
         type: 'area',
-        height: 350,
-        fontFamily: 'Inter, sans-serif',
+        height: 320,
+        width: '100%',
         toolbar: { show: false },
+        fontFamily: 'Inter, sans-serif',
       },
-      colors: ['#10b981', '#ef4444'], // Verde y Rojo
+      colors: ['#10b981', '#ef4444'],
       dataLabels: { enabled: false },
       stroke: { curve: 'smooth', width: 2 },
       fill: {
@@ -89,15 +129,7 @@ export class DashboardComponent implements OnInit {
         },
       },
       xaxis: {
-        categories: chartData.labels || [
-          'Lun',
-          'Mar',
-          'Mie',
-          'Jue',
-          'Vie',
-          'Sab',
-          'Dom',
-        ],
+        categories: financialData.chart_labels || [],
         axisBorder: { show: false },
       },
       yaxis: {
@@ -106,24 +138,38 @@ export class DashboardComponent implements OnInit {
       grid: { strokeDashArray: 4, borderColor: '#e2e8f0' },
     };
 
-    // GRÁFICO 2: DONA (Categorías) - En 0 por ahora
+    const donutSeries =
+      this.topProducts.length > 0 ? this.topProducts.map((p) => p.sold) : [1];
+    const donutLabels =
+      this.topProducts.length > 0
+        ? this.topProducts.map((p) => p.name)
+        : ['Sin datos'];
+
     this.donutChartOptions = {
-      series: [0, 0, 0], // Vacío intencionalmente
-      labels: ['Categoría A', 'Categoría B', 'Categoría C'],
-      chart: { type: 'donut', height: 300, fontFamily: 'Inter, sans-serif' },
-      colors: ['#e2e8f0', '#cbd5e1', '#94a3b8'], // Colores grises hasta que haya datos reales
+      series: donutSeries,
+      labels: donutLabels,
+      chart: {
+        type: 'donut',
+        height: 280,
+        width: '100%',
+        fontFamily: 'Inter, sans-serif',
+      },
+      colors:
+        this.topProducts.length > 0
+          ? ['#4f46e5', '#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6']
+          : ['#e2e8f0'],
       plotOptions: {
         pie: {
           donut: {
-            labels: {
-              show: true,
-              total: { show: true, label: 'Sin datos', color: '#94a3b8' },
-            },
+            size: '75%',
+            labels: { show: true, name: { show: true }, value: { show: true } },
           },
         },
       },
       dataLabels: { enabled: false },
       legend: { position: 'bottom' },
+      stroke: { show: false },
+      tooltip: { enabled: this.topProducts.length > 0 },
     };
   }
 

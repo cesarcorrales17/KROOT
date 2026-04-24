@@ -60,7 +60,7 @@ $primary-action: #4f46e5;
       }
 
       &:hover {
-        background: #f1f5f9;
+        background: #f8fafc;
         color: $text-main;
       }
 
@@ -77,7 +77,6 @@ $primary-action: #4f46e5;
         }
       }
     }
-
     .menu-divider {
       height: 1px;
       background: $border;
@@ -86,88 +85,30 @@ $primary-action: #4f46e5;
   }
 }
 
+/* ================= MAIN CONTENT ================= */
 .main-content {
   flex: 1;
   margin-left: 260px;
   display: flex;
   flex-direction: column;
-
-  .topbar {
-    padding: 24px 40px;
-    background: #ffffff;
-    border-bottom: 1px solid $border;
-    .page-title {
-      margin: 0;
-      font-size: 24px;
-      font-weight: 700;
-      color: $text-main;
-    }
-  }
-
-  .content-wrapper {
-    padding: 40px;
-    max-width: 1200px;
-  }
+  min-height: 100vh;
+  width: calc(100% - 260px);
 }
 
-/* ================= COMPONENTES GENERALES ================= */
-.settings-card {
+.topbar {
+  padding: 20px 32px;
   background: #ffffff;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid $border;
-}
+  border-bottom: 1px solid $border;
 
-.alert {
-  padding: 12px 16px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 500;
-  mat-icon {
-    font-size: 20px;
-    width: 20px;
-    height: 20px;
-  }
-  &.success-alert {
-    background: #ecfdf5;
-    color: #059669;
-    border: 1px solid #a7f3d0;
-  }
-  &.error-alert {
-    background: #fef2f2;
-    color: #dc2626;
-    border: 1px solid #fecaca;
+  .page-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 700;
+    color: $text-main;
   }
 }
 
-.grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.full-width {
-  width: 100%;
-}
-.text-right {
-  text-align: right;
-}
-.text-center {
-  text-align: center;
-}
-.text-muted {
-  color: $text-muted;
-}
-.text-main {
-  color: $text-main;
-}
-.font-weight-bold {
-  font-weight: 700;
-}
-
-/* ================= CONTROLES DE VISTA ================= */
+/* Controles de vista (Lista / Tarjeta) */
 .view-toggle {
   display: flex;
   background: #f1f5f9;
@@ -175,140 +116,208 @@ $primary-action: #4f46e5;
   padding: 4px;
 
   button {
-    width: 36px;
-    height: 36px;
+    background: transparent;
+    border: none;
+    padding: 8px 12px;
     border-radius: 6px;
-    color: #64748b;
+    cursor: pointer;
+    color: $text-muted;
+    transition: all 0.2s;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    &:hover {
+      color: $text-main;
+    }
     &.active {
       background: #ffffff;
-      color: #4f46e5;
+      color: $primary-action;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
   }
 }
 
-/* ================= VISTA DE LISTA (TABLA) ================= */
-.table-container {
-  padding: 0 !important;
-  overflow: hidden;
+.content-wrapper {
+  padding: 32px;
+  flex: 1;
 }
-.table-responsive {
-  overflow-x: auto;
+
+/* ================= ALERTS & STATES ================= */
+.alert {
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 500;
+  animation: slideIn 0.3s ease-out;
+
+  &.success-alert {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    mat-icon {
+      color: #166534;
+    }
+  }
+  &.error-alert {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    mat-icon {
+      color: #991b1b;
+    }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px dashed #cbd5e1;
+  color: $text-muted;
+
+  mat-icon {
+    font-size: 64px;
+    width: 64px;
+    height: 64px;
+    color: #cbd5e1;
+    margin-bottom: 16px;
+  }
+  h3 {
+    margin: 0 0 8px 0;
+    color: $text-main;
+    font-size: 18px;
+  }
+  p {
+    margin: 0;
+    font-size: 14px;
+  }
+}
+
+/* ================= VISTA: TABLA (LISTA) ================= */
+.table-container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid $border;
+  overflow: hidden;
 }
 
 .kroot-table {
   width: 100%;
   border-collapse: collapse;
+  font-size: 14px;
 
   th {
     text-align: left;
-    padding: 16px 24px;
-    font-size: 12px;
-    font-weight: 600;
+    padding: 16px;
+    background: #f8fafc;
     color: $text-muted;
+    font-weight: 600;
+    font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     border-bottom: 1px solid $border;
-    background: #f8fafc;
   }
 
   td {
-    padding: 16px 24px;
-    font-size: 14px;
+    padding: 16px;
+    border-bottom: 1px solid #f1f5f9;
     color: $text-main;
-    border-bottom: 1px solid $border;
     vertical-align: middle;
   }
 
   tr:last-child td {
     border-bottom: none;
   }
-  tr:hover td {
+  tr:hover {
     background: #f8fafc;
   }
-  tr.inactive-row td {
+  tr.inactive-row {
     opacity: 0.6;
+    background: #f8fafc;
   }
 
-  /* Ajuste de miniatura para la tabla */
   .list-product-cell {
     display: flex;
     align-items: center;
     gap: 12px;
 
     .list-image-frame {
-      width: 36px;
-      height: 36px;
-      min-width: 36px;
-      border-radius: 6px;
-      border: 1px solid #e2e8f0;
-      background: #ffffff;
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: #f1f5f9;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 2px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
 
       img {
         width: 100%;
         height: 100%;
-        object-fit: contain; /* Encaja la imagen sin recortar */
-      }
-    }
-
-    .product-info-text {
-      display: flex;
-      flex-direction: column;
-      strong {
-        font-size: 14px;
-        color: #0f172a;
-        margin-bottom: 2px;
+        object-fit: cover;
       }
     }
   }
 
-  .badge {
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: 600;
-    display: inline-block;
-    &.badge-success {
-      background: #dcfce7;
-      color: #166534;
-    }
-    &.badge-danger {
-      background: #f1f5f9;
-      color: $text-muted;
-    }
+  .text-right {
+    text-align: right;
   }
-
-  .badge-outline {
-    border: 1px solid $border;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-family: monospace;
-    color: $text-muted;
-    font-size: 12px;
+  .text-main {
+    color: $primary-action;
+  }
+  .font-weight-bold {
+    font-weight: 700;
   }
 }
 
-/* ================= VISTA DE TARJETAS (GRID) ================= */
+.badge-outline {
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  &.badge-success {
+    background: #dcfce7;
+    color: #166534;
+  }
+  &.badge-danger {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+}
+
+/* ================= VISTA: TARJETAS (GRID) ================= */
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 24px;
 }
 
 .product-card {
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid $border;
   overflow: hidden;
-  cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  display: flex;
-  flex-direction: column;
+  cursor: pointer;
 
   &:hover {
     transform: translateY(-4px);
@@ -321,69 +330,50 @@ $primary-action: #4f46e5;
     filter: grayscale(0.5);
   }
 
-  /* Marco de la imagen en la tarjeta */
   .card-image-wrapper {
-    width: 100%;
-    height: 200px; /* Altura estandarizada */
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
     position: relative;
+    width: 100%;
+    height: 200px;
+    background: #f8fafc;
+    border-bottom: 1px solid #f1f5f9;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 16px;
-    box-sizing: border-box;
 
     img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain; /* Magia: La imagen cabe perfectamente sin estirarse */
-      filter: drop-shadow(
-        0 4px 6px rgba(0, 0, 0, 0.05)
-      ); /* Sombra sutil a los PNGs */
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      padding: 16px;
+      box-sizing: border-box;
     }
 
     .card-status {
       position: absolute;
       top: 12px;
       right: 12px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 4px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      &.badge-success {
-        background: #dcfce7;
-        color: #166534;
-      }
-      &.badge-danger {
-        background: #f1f5f9;
-        color: #64748b;
-      }
+      z-index: 2;
     }
   }
 
   .card-content {
     padding: 16px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
 
     .category-label {
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 700;
+      color: $primary-action;
       text-transform: uppercase;
-      color: #4f46e5;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .product-name {
       margin: 0 0 4px 0;
       font-size: 15px;
       font-weight: 600;
-      color: #0f172a;
-      line-height: 1.3;
+      color: $text-main;
+
+      /* ESTO ES LO QUE ESTABA EN AMARILLO. ASÍ SE HACE CORRECTAMENTE: */
       display: -webkit-box;
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
@@ -392,71 +382,41 @@ $primary-action: #4f46e5;
 
     .product-sku {
       font-size: 12px;
-      color: #64748b;
-      font-family: monospace;
+      color: $text-muted;
       margin-bottom: 16px;
     }
 
     .card-footer-info {
-      margin-top: auto;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid #f1f5f9;
 
       .card-price {
-        font-size: 20px;
-        font-weight: 700;
-        color: #0f172a;
+        font-size: 18px;
+        font-weight: 800;
+        color: $text-main;
       }
 
       .card-stock {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        padding: 4px 8px;
-        border-radius: 6px;
-        font-size: 12px;
-        font-weight: 600;
         display: flex;
         align-items: center;
         gap: 4px;
-        color: #475569;
+        font-size: 12px;
+        font-weight: 600;
 
         mat-icon {
-          font-size: 14px;
-          width: 14px;
-          height: 14px;
+          font-size: 16px;
+          width: 16px;
+          height: 16px;
         }
       }
     }
   }
 }
 
-.empty-state {
-  text-align: center;
-  padding: 64px 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-
-  mat-icon {
-    font-size: 48px;
-    width: 48px;
-    height: 48px;
-    color: #94a3b8;
-    margin-bottom: 16px;
-  }
-  h3 {
-    margin: 0 0 8px 0;
-    color: #0f172a;
-    font-size: 18px;
-  }
-  p {
-    margin: 0;
-    color: #64748b;
-  }
-}
-
-/* ================= DRAWER (PANEL LATERAL) ================= */
+/* ================= PANEL LATERAL (DRAWER) ================= */
 .drawer-overlay {
   position: fixed;
   top: 0;
@@ -464,19 +424,19 @@ $primary-action: #4f46e5;
   right: 0;
   bottom: 0;
   background: rgba(15, 23, 42, 0.4);
-  z-index: 1000;
   backdrop-filter: blur(2px);
+  z-index: 99;
 }
 
 .side-drawer {
   position: fixed;
   top: 0;
   right: -600px;
+  bottom: 0;
   width: 600px;
-  height: 100vh;
   background: #ffffff;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
-  z-index: 1001;
+  z-index: 100;
   transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   flex-direction: column;
@@ -491,18 +451,20 @@ $primary-action: #4f46e5;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: #f8fafc;
     h2 {
       margin: 0;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      color: $text-main;
+      color: #001736;
     }
   }
 
   .drawer-body {
     flex: 1;
-    padding: 24px;
+    padding: 24px 32px; /* Un poco más de margen lateral para que respire */
     overflow-y: auto;
+
     .form-row {
       margin-bottom: 16px;
     }
@@ -543,41 +505,55 @@ $primary-action: #4f46e5;
     align-items: center;
     cursor: pointer;
     overflow: hidden;
+    position: relative;
     transition: all 0.2s;
-    margin-bottom: 16px;
 
     &:hover {
-      border-color: #6366f1;
-      background-color: #eef2ff;
+      background-color: #f1f5f9;
+      border-color: $primary-action;
     }
 
     .upload-placeholder {
       display: flex;
       flex-direction: column;
       align-items: center;
-      color: #64748b;
+      color: $text-muted;
       mat-icon {
         font-size: 32px;
         width: 32px;
         height: 32px;
         margin-bottom: 8px;
-        color: #94a3b8;
+      }
+      span {
+        font-size: 14px;
+        font-weight: 500;
       }
     }
 
     .preview-image {
       width: 100%;
       height: 100%;
-      object-fit: contain; /* Para que la vista previa en el formulario tampoco se deforme */
+      object-fit: contain;
     }
   }
+}
+
+/* SISTEMA DE CUADRÍCULA PARA FORMULARIOS */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
 }
 
 /* =========================================================================
    ARQUITECTURA RESPONSIVE REAL (MÓVILES Y TABLETS)
 ========================================================================= */
 
-/* Elementos que solo se ven en móvil */
 .mobile-menu-overlay {
   display: none;
 }
@@ -591,6 +567,18 @@ $primary-action: #4f46e5;
   display: flex;
   align-items: center;
   gap: 0;
+}
+
+/* =========================================================================
+   FORZAR QUE LOS INPUTS LLENEN SUS CELDAS EXACTAMENTE
+========================================================================= */
+.full-width {
+  width: 100% !important;
+  display: block;
+}
+
+mat-form-field {
+  width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -682,7 +670,6 @@ $primary-action: #4f46e5;
     height: auto;
     min-height: 100dvh;
   }
-
   .main-content {
     margin-left: 0 !important;
     width: 100% !important;
@@ -690,23 +677,21 @@ $primary-action: #4f46e5;
 
   .topbar {
     padding: 16px 20px !important;
-    flex-wrap: wrap; /* Permite que el botón de 'Nuevo Producto' baje si no cabe */
+    flex-wrap: wrap;
     gap: 12px;
   }
-
   .content-wrapper {
     padding: 16px 20px !important;
   }
 
-  /* El panel de creación cubre toda la pantalla para que el teclado no moleste */
+  /* El panel de creación cubre toda la pantalla */
   .side-drawer {
     width: 100dvw !important;
     right: -100dvw !important;
-    z-index: 1100 !important; /* Por encima de todo */
+    z-index: 1100 !important;
     &.open {
       right: 0 !important;
     }
-
     .drawer-header {
       padding: 16px 20px;
     }
@@ -715,27 +700,23 @@ $primary-action: #4f46e5;
     }
   }
 
-  /* Formularios a una sola columna */
   .grid-2,
   .grid-3 {
     grid-template-columns: 1fr !important;
     gap: 0 !important;
   }
 
-  /* Evita que las tablas rompan la pantalla en celular */
   .table-responsive {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    margin-right: -20px; /* Expande la tabla hasta el borde para aprovechar espacio */
+    margin-right: -20px;
     padding-right: 20px;
   }
 
-  /* Ajuste de tarjetas de productos */
   .product-grid {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
     gap: 12px !important;
   }
-
   .product-card {
     .card-image-wrapper {
       height: 140px !important;
@@ -746,5 +727,42 @@ $primary-action: #4f46e5;
         font-size: 13px !important;
       }
     }
+  }
+}
+
+/* =========================================================================
+   DISEÑO PREMIUM PARA LOS INPUTS (ELIMINAR BORDE NEGRO DE ANGULAR MATERIAL)
+========================================================================= */
+::ng-deep {
+  .mdc-notched-outline__leading,
+  .mdc-notched-outline__notch,
+  .mdc-notched-outline__trailing {
+    border-color: #e2e8f0 !important;
+    transition: border-color 0.2s ease;
+  }
+
+  .mat-mdc-form-field:hover .mdc-notched-outline__leading,
+  .mat-mdc-form-field:hover .mdc-notched-outline__notch,
+  .mat-mdc-form-field:hover .mdc-notched-outline__trailing {
+    border-color: #cbd5e1 !important;
+  }
+
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+  .mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+    border-color: #4f46e5 !important;
+    border-width: 2px !important;
+  }
+
+  .mat-mdc-form-field.mat-focused .mdc-floating-label {
+    color: #4f46e5 !important;
+  }
+
+  /* SOLUCIÓN AL LAG: Ahora solo quita el borde nativo a los elementos que lo necesitan, no a toda la app */
+  input,
+  textarea,
+  select,
+  button {
+    outline: none !important;
   }
 }

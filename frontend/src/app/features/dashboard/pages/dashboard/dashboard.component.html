@@ -1,174 +1,223 @@
 <div class="dashboard-layout">
-  <aside class="sidebar">
+  <div
+    class="mobile-menu-overlay"
+    *ngIf="isMobileMenuOpen"
+    (click)="toggleMobileMenu()"
+  ></div>
+
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-brand">
       <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+      <button
+        mat-icon-button
+        class="close-menu-btn"
+        (click)="toggleMobileMenu()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
     <nav class="sidebar-menu">
-      <a routerLink="/dashboard" class="menu-item active">
-        <mat-icon>dashboard</mat-icon>
-        <span>Dashboard</span>
-      </a>
+      <a routerLink="/dashboard" class="menu-item active"
+        ><mat-icon>dashboard</mat-icon><span>Dashboard</span></a
+      >
       <div class="menu-divider"></div>
-      <a routerLink="/sales" class="menu-item">
-        <mat-icon>point_of_sale</mat-icon>
-        <span>Punto de Venta</span>
-      </a>
+      <a routerLink="/sales" class="menu-item"
+        ><mat-icon>point_of_sale</mat-icon><span>Punto de Venta</span></a
+      >
       <a routerLink="/expenses" class="menu-item"
         ><mat-icon>receipt_long</mat-icon><span>Egresos</span></a
       >
-
-      <a routerLink="/inventory" class="menu-item">
-        <mat-icon>inventory_2</mat-icon>
-        <span>Catálogo y Stock</span>
-      </a>
+      <a routerLink="/inventory" class="menu-item"
+        ><mat-icon>inventory_2</mat-icon><span>Catálogo y Stock</span></a
+      >
       <div class="menu-divider"></div>
-      <a routerLink="/profile" class="menu-item">
-        <mat-icon>settings</mat-icon>
-        <span>Configuración</span>
-      </a>
-      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
-        <mat-icon>logout</mat-icon>
-        <span>Cerrar sesión</span>
-      </a>
+      <a routerLink="/profile" class="menu-item"
+        ><mat-icon>settings</mat-icon><span>Configuración</span></a
+      >
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer"
+        ><mat-icon>logout</mat-icon><span>Cerrar sesión</span></a
+      >
     </nav>
   </aside>
 
   <main class="main-content">
     <header class="topbar">
-      <h1 class="page-title">Resumen Financiero</h1>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
-        <mat-select [(value)]="selectedPeriod">
-          <mat-option value="this_month">Este mes</mat-option>
-          <mat-option value="this_week">Esta semana</mat-option>
-        </mat-select>
-      </mat-form-field>
+      <div class="header-title-wrapper">
+        <button
+          mat-icon-button
+          class="hamburger-btn"
+          (click)="toggleMobileMenu()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+        <div>
+          <h1 class="page-title">Visión General</h1>
+          <p class="subtitle">Análisis financiero y operativo</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div class="period-selector">
+          <mat-icon>calendar_today</mat-icon>
+          <select
+            [ngModel]="selectedPeriod"
+            (ngModelChange)="onPeriodChange($event)"
+          >
+            <option value="today">Hoy</option>
+            <option value="this_week">Esta Semana</option>
+            <option value="this_month">Este Mes</option>
+            <option value="last_month">Mes Anterior</option>
+            <option value="this_year">Este Año</option>
+          </select>
+        </div>
+      </div>
     </header>
 
     <div class="content-wrapper">
-      <div *ngIf="isLoading" class="loading-state">
+      <div *ngIf="isLoading" class="loader-container">
         <mat-spinner diameter="40"></mat-spinner>
       </div>
 
-      <div *ngIf="!isLoading" class="master-grid">
-        <div class="left-panel">
-          <div class="kpi-row">
-            <div class="dash-card kpi-card">
-              <div class="kpi-header">
-                <span class="kpi-title">Ingresos Totales</span>
-                <div class="kpi-icon icon-green">
-                  <mat-icon>trending_up</mat-icon>
-                </div>
-              </div>
-              <h2 class="kpi-value">
-                ${{ kpis.total_income | number }} <small>{{ currency }}</small>
-              </h2>
-            </div>
-            <div class="dash-card kpi-card">
-              <div class="kpi-header">
-                <span class="kpi-title">Gastos Totales</span>
-                <div class="kpi-icon icon-red">
-                  <mat-icon>trending_down</mat-icon>
-                </div>
-              </div>
-              <h2 class="kpi-value">
-                ${{ kpis.total_expenses | number }}
-                <small>{{ currency }}</small>
-              </h2>
-            </div>
-            <div class="dash-card kpi-card">
-              <div class="kpi-header">
-                <span class="kpi-title">Flujo de Caja</span>
-                <div class="kpi-icon icon-blue">
-                  <mat-icon>account_balance_wallet</mat-icon>
-                </div>
-              </div>
-              <h2
-                class="kpi-value"
-                [ngClass]="{ 'text-danger': kpis.cash_flow < 0 }"
-              >
-                ${{ kpis.cash_flow | number }} <small>{{ currency }}</small>
-              </h2>
-            </div>
+      <div *ngIf="!isLoading" class="bento-dashboard fade-in">
+        <div
+          class="health-banner"
+          [ngClass]="
+            kpis.total_income === 0
+              ? 'status-neutral'
+              : kpis.cash_flow >= 0
+                ? 'status-success'
+                : 'status-danger'
+          "
+        >
+          <div class="health-icon">
+            <mat-icon *ngIf="kpis.total_income === 0">hourglass_empty</mat-icon>
+            <mat-icon *ngIf="kpis.total_income > 0 && kpis.cash_flow >= 0"
+              >verified</mat-icon
+            >
+            <mat-icon *ngIf="kpis.cash_flow < 0">warning</mat-icon>
           </div>
-
-          <div class="charts-row">
-            <div class="dash-card area-chart">
-              <h3 class="card-title">Dinámica de Caja</h3>
-              <apx-chart
-                *ngIf="areaChartOptions"
-                [series]="areaChartOptions.series"
-                [chart]="areaChartOptions.chart"
-                [xaxis]="areaChartOptions.xaxis"
-                [yaxis]="areaChartOptions.yaxis"
-                [colors]="areaChartOptions.colors"
-                [stroke]="areaChartOptions.stroke"
-                [fill]="areaChartOptions.fill"
-                [dataLabels]="areaChartOptions.dataLabels"
-                [grid]="areaChartOptions.grid"
-              ></apx-chart>
-            </div>
-            <div class="dash-card donut-chart">
-              <h3 class="card-title">Categorías</h3>
-              <apx-chart
-                *ngIf="donutChartOptions"
-                [series]="donutChartOptions.series"
-                [chart]="donutChartOptions.chart"
-                [labels]="donutChartOptions.labels"
-                [colors]="donutChartOptions.colors"
-                [plotOptions]="donutChartOptions.plotOptions"
-                [dataLabels]="donutChartOptions.dataLabels"
-                [legend]="donutChartOptions.legend"
-              ></apx-chart>
-            </div>
+          <div class="health-content">
+            <h3>
+              {{
+                kpis.total_income === 0
+                  ? "A la espera de datos"
+                  : kpis.cash_flow >= 0
+                    ? "Negocio Saludable y Rentable"
+                    : "Alerta de Flujo de Caja"
+              }}
+            </h3>
+            <p *ngIf="kpis.cash_flow < 0">
+              Los egresos superan los ingresos. Revisa tu estructura de costos.
+            </p>
+            <p *ngIf="kpis.total_income > 0 && kpis.cash_flow >= 0">
+              Margen operativo estable frente a los gastos registrados.
+            </p>
+            <p *ngIf="kpis.total_income === 0">
+              Registra ventas para activar el análisis.
+            </p>
           </div>
         </div>
 
-        <div class="right-panel">
-          <div class="dash-card semaforo-card">
-            <div class="status-header">
-              <mat-icon class="pulse-icon">insights</mat-icon>
-              <h3 class="card-title">
-                Semáforo de Estado General de la Empresa
-              </h3>
+        <div class="bento-row kpi-financial-row">
+          <div class="bento-card kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Ingresos</span>
+              <div class="kpi-icon icon-green">
+                <mat-icon>trending_up</mat-icon>
+              </div>
+            </div>
+            <h3 class="kpi-value">${{ kpis.total_income | number }}</h3>
+          </div>
+          <div class="bento-card kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Egresos</span>
+              <div class="kpi-icon icon-red">
+                <mat-icon>trending_down</mat-icon>
+              </div>
+            </div>
+            <h3 class="kpi-value">${{ kpis.total_expenses | number }}</h3>
+          </div>
+          <div class="bento-card kpi-card highlight">
+            <div class="kpi-header">
+              <span class="kpi-title">Flujo Neto</span>
+              <div class="kpi-icon icon-blue">
+                <mat-icon>account_balance_wallet</mat-icon>
+              </div>
+            </div>
+            <h3 class="kpi-value">${{ kpis.cash_flow | number }}</h3>
+          </div>
+        </div>
+
+        <div class="bento-split">
+          <div class="main-column">
+            <div class="bento-card chart-card">
+              <div class="card-header">
+                <h3>Evolución Financiera</h3>
+                <span class="badge neutral">Este periodo</span>
+              </div>
+              <div class="chart-container">
+                <apx-chart
+                  *ngIf="areaChartOptions"
+                  [series]="areaChartOptions.series"
+                  [chart]="areaChartOptions.chart"
+                  [xaxis]="areaChartOptions.xaxis"
+                  [yaxis]="areaChartOptions.yaxis"
+                  [fill]="areaChartOptions.fill"
+                  [stroke]="areaChartOptions.stroke"
+                  [colors]="areaChartOptions.colors"
+                  [dataLabels]="areaChartOptions.dataLabels"
+                  [grid]="areaChartOptions.grid"
+                ></apx-chart>
+              </div>
+            </div>
+          </div>
+
+          <div class="side-column">
+            <div class="ops-mini-grid">
+              <div class="bento-card ops-card">
+                <mat-icon class="text-muted">shopping_bag</mat-icon>
+                <div class="ops-info">
+                  <span class="ops-val">{{
+                    operationalKpis.units_sold_today
+                  }}</span>
+                  <span class="ops-label">Ventas Hoy</span>
+                </div>
+              </div>
+              <div
+                class="bento-card ops-card"
+                [class.alert-border]="operationalKpis.low_stock_alerts > 0"
+              >
+                <mat-icon
+                  [class.text-warn]="operationalKpis.low_stock_alerts > 0"
+                  >inventory_2</mat-icon
+                >
+                <div class="ops-info">
+                  <span
+                    class="ops-val"
+                    [class.text-warn]="operationalKpis.low_stock_alerts > 0"
+                    >{{ operationalKpis.low_stock_alerts }}</span
+                  >
+                  <span class="ops-label">Stock Bajo</span>
+                </div>
+              </div>
             </div>
 
-            <div
-              class="status-indicator"
-              [ngClass]="
-                kpis.total_income === 0
-                  ? 'neutral'
-                  : kpis.cash_flow >= 0
-                    ? 'success'
-                    : 'danger'
-              "
-            >
-              <div class="status-dot"></div>
-              <h4>
-                {{
-                  kpis.total_income === 0
-                    ? "A la espera de datos"
-                    : kpis.cash_flow >= 0
-                      ? "Saludable y Rentable"
-                      : "Alerta de Pérdidas"
-                }}
-              </h4>
+            <div class="bento-card chart-card side-chart">
+              <div class="card-header">
+                <h3>Top Productos</h3>
+              </div>
+              <div class="chart-container">
+                <apx-chart
+                  *ngIf="donutChartOptions"
+                  [series]="donutChartOptions.series"
+                  [chart]="donutChartOptions.chart"
+                  [labels]="donutChartOptions.labels"
+                  [colors]="donutChartOptions.colors"
+                  [plotOptions]="donutChartOptions.plotOptions"
+                  [legend]="donutChartOptions.legend"
+                  [stroke]="donutChartOptions.stroke"
+                ></apx-chart>
+              </div>
             </div>
-
-            <p class="ai-text" *ngIf="kpis.total_income === 0">
-              Registra tus primeros movimientos financieros para activar el
-              análisis predictivo de la IA de Kroot.
-            </p>
-            <p
-              class="ai-text"
-              *ngIf="kpis.total_income > 0 && kpis.cash_flow >= 0"
-            >
-              Tu flujo de caja es positivo. Los ingresos mantienen un margen
-              operativo saludable frente a los gastos.
-            </p>
-            <p class="ai-text text-danger" *ngIf="kpis.cash_flow < 0">
-              <strong>Alerta:</strong> Los egresos han superado los ingresos.
-              Sugerimos revisar la estructura de costos operativos.
-            </p>
           </div>
         </div>
       </div>

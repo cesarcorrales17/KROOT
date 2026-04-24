@@ -159,15 +159,10 @@
                 <td>
                   <span
                     [ngStyle]="{
-                      color:
-                        p.min_stock && p.min_stock > 0
-                          ? p.min_stock > 5
-                            ? '#059669'
-                            : '#dc2626'
-                          : '#0f172a',
+                      color: p.stock > p.min_stock ? '#059669' : '#dc2626',
                     }"
                   >
-                    <strong>{{ p.min_stock }}</strong>
+                    <strong>{{ p.stock }}</strong>
                     <small>{{ p.unit }}</small>
                   </span>
                 </td>
@@ -270,6 +265,7 @@
     <div class="drawer-body">
       <form [formGroup]="productForm" id="product-form" (ngSubmit)="onSubmit()">
         <div class="form-section-title">Información Básica</div>
+
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Nombre del Producto</mat-label>
@@ -312,16 +308,17 @@
         </div>
 
         <div class="form-section-title">Precios e Inventario</div>
+
         <div class="form-row grid-2">
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Precio de Venta</mat-label>
-            <input matInput type="number" formControlName="sale_price" />
+            <mat-label>Precio de Costo</mat-label>
+            <input matInput type="number" formControlName="cost_price" />
             <mat-icon matPrefix>attach_money</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="full-width">
-            <mat-label>Precio de Costo</mat-label>
-            <input matInput type="number" formControlName="cost_price" />
+            <mat-label>Precio de Venta</mat-label>
+            <input matInput type="number" formControlName="sale_price" />
             <mat-icon matPrefix>attach_money</mat-icon>
           </mat-form-field>
         </div>
@@ -352,14 +349,15 @@
           </mat-form-field>
         </div>
 
-        <div class="form-section-title">Detalles</div>
+        <div class="form-section-title">Detalles Adicionales</div>
+
         <div class="form-row">
           <mat-form-field appearance="outline" class="full-width">
             <mat-label>Descripción detallada</mat-label>
             <textarea
               matInput
               formControlName="description"
-              rows="3"
+              style="height: 120px; resize: none"
               placeholder="Especificaciones, material, peso..."
             ></textarea>
           </mat-form-field>
