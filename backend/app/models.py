@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Date
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, Float, Date, UniqueConstraint, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -90,39 +90,163 @@ class Transaction(Base):
 
     # Relación (Asegurar que la clase Business la reconozca después)
     business = relationship("Business", backref="transactions")
-    
+
+
+# ==========================================
+# TABLA DE VENTAS (INGRESOS MANUALES Y POS) 
+# ==========================================   
+
 class Sale(Base):
     __tablename__ = "sales"
+    
     id = Column(Integer, primary_key=True, index=True)
     business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
 
-    # ── Campos originales ──────────────────────────────────────────────────
-    amount          = Column(Float,   nullable=False)
+    # ── Origen de la Venta ─────────
+    source          = Column(String, default="manual", nullable=False) # 'manual' o 'pos'
+
+    # ── Campos originales ──────────────────────────────────
+    amount          = Column(Float,   nullable=False) # Será el Total de la factura
     period_type     = Column(String,  nullable=False)   # 'monthly' | 'weekly'
     period_date     = Column(Date,    nullable=False)
     category        = Column(String,  nullable=True)
     payment_method  = Column(String,  nullable=True)
     description     = Column(String,  nullable=True)
 
-    # ── Datos del cliente ─────────────────────────────────────────────────
+    # ── Datos del cliente (CRM Futuro) ─────────────────────
     client_name     = Column(String,  nullable=True)
-    client_type     = Column(String,  nullable=True)    # 'Persona Natural', 'Empresa', etc.
-    client_contact  = Column(String,  nullable=True)    # teléfono o email
-    client_document = Column(String,  nullable=True)    # cédula / NIT
+    client_type     = Column(String,  nullable=True)    
+    client_contact  = Column(String,  nullable=True)    
+    client_document = Column(String,  nullable=True)    
 
-    # ── Detalle del producto/servicio ─────────────────────────────────────
+    # ── Detalle del producto (Para Ingresos Manuales) ───────────
     product_name    = Column(String,  nullable=True)
-    quantity        = Column(Float,   nullable=True)    # Float para permitir fracciones
+    quantity        = Column(Float,   nullable=True)    
     unit_price      = Column(Float,   nullable=True)
 
-    # ── Información financiera ────────────────────────────────────────────
-    payment_status  = Column(String,  nullable=True)    # 'paid' | 'pending' | 'partial' | 'cancelled'
-    invoice_ref     = Column(String,  nullable=True)    # número de factura / comprobante
-
-    # ── Control y logística ───────────────────────────────────────────────
-    sales_channel   = Column(String,  nullable=True)    # 'Presencial', 'WhatsApp', etc.
-    internal_notes  = Column(String,  nullable=True)
-    sale_time       = Column(String,  nullable=True)    # hora de la venta HH:MM
+    # ── Información financiera ─────────────────────────────
+    payment_status  = Column(String,  nullable=True)    
+    invoice_ref     = Column(String,  nullable=True)    
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     business   = relationship("Business", backref="sales")
+    
+    # ── NUEVO: RELACIÓN POS ─────────────────────────────
+    # Esto permite que una venta tenga múltiples productos asociados
+    details = relationship("SaleDetail", back_populates="sale", cascade="all, delete-orphan")
+
+
+# ── TABLA PARA SOPORTAR MÚLTIPLES PRODUCTOS EN EL POS ──
+class SaleDetail(Base):
+    __tablename__ = "sale_details"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    sale_id = Column(Integer, ForeignKey("sales.id", ondelete="CASCADE"), nullable=False)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    quantity = Column(Float, nullable=False)
+    unit_price = Column(Float, nullable=False)
+    subtotal = Column(Float, nullable=False)
+
+    sale = relationship("Sale", back_populates="details")
+    product = relationship("Product")
+        
+
+# ==========================================
+# MODELOS DE GASTOS OPERATIVOS
+# ==========================================
+
+class ExpenseCategory(Base):
+    __tablename__ = "expense_categories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    # Si business_id es nulo, es una categoría global/predefinida de Kroot.
+    # Si tiene un ID, es una categoría personalizada creada por esa empresa.
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=True)
+    
+    name = Column(String, nullable=False)
+    is_default = Column(Boolean, default=False)
+
+    business = relationship("Business", backref="custom_categories")
+
+
+class Expense(Base):
+    __tablename__ = "expenses"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
+    
+    # ── Relación con la categoría ──────────────────────────
+    category_id = Column(Integer, ForeignKey("expense_categories.id"), nullable=False)
+    
+    # ── Origen del Gasto (HU Dual) ─────────────────────────
+    source = Column(String, default="manual", nullable=False) # 'manual' o 'purchase'
+
+    # ── Campos financieros ─────────────────────────────────
+    amount = Column(Float, nullable=False)
+    period_type = Column(String, nullable=False)   # 'monthly' | 'weekly'
+    period_date = Column(Date, nullable=False)
+    
+    # ── Detalles adicionales ───────────────────────────────
+    supplier_name = Column(String, nullable=True)  # A quién se le pagó
+    description = Column(String, nullable=True)    # Concepto del gasto
+    receipt_ref = Column(String, nullable=True)    # N° de factura/recibo de pago
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    business = relationship("Business", backref="expenses")
+    category = relationship("ExpenseCategory")
+
+    
+# ==========================================
+# MODELOS DE CATÁLOGO E INVENTARIO 
+# ==========================================
+
+class ProductCategory(Base):
+    __tablename__ = "product_categories"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    # business_id en Null permite crear categorías globales por defecto (ej. 'General')
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=True)
+    
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    is_default = Column(Boolean, default=False)
+
+    business = relationship("Business", backref="product_categories")
+
+
+class Product(Base):
+    __tablename__ = "products"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    business_id = Column(Integer, ForeignKey("business.id", ondelete="CASCADE"), nullable=False)
+    category_id = Column(Integer, ForeignKey("product_categories.id"), nullable=True)
+    
+    # ── Identificación ─────────────────────────────────────
+    name = Column(String, nullable=False)
+    sku = Column(String, index=True, nullable=False)
+    barcode = Column(String, index=True, nullable=True)
+    description = Column(Text, nullable=True)
+    
+    # ── Precios y Medidas ──────────────────────────────────
+    sale_price = Column(Float, nullable=False)
+    cost_price = Column(Float, nullable=False)
+    unit = Column(String, default="unidad", nullable=False) # Ej: unidad, kg, litro, paquete
+    
+    # ── Configuración y Estado ─────────────────────────────
+    image_url = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    min_stock = Column(Float, default=5.0) # Nivel para disparar alertas
+    stock = Column(Float, default=0.0) # Stock actual, se actualizará con ventas e ingresos de inventario
+    
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    business = relationship("Business", backref="products")
+    category = relationship("ProductCategory")
+
+    # ── Restricciones ──────────────────────────────────────
+    # Garantiza que el SKU sea único POR EMPRESA, no a nivel global
+    __table_args__ = (
+        UniqueConstraint('business_id', 'sku', name='_business_sku_uc'),
+    )

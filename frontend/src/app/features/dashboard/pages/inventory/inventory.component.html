@@ -1,0 +1,426 @@
+<div class="dashboard-layout">
+  <div
+    class="mobile-menu-overlay"
+    *ngIf="isMobileMenuOpen"
+    (click)="toggleMobileMenu()"
+  ></div>
+
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
+    <div class="sidebar-brand">
+      <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+      <button
+        mat-icon-button
+        class="close-menu-btn"
+        (click)="toggleMobileMenu()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <nav class="sidebar-menu">
+      <a routerLink="/dashboard" class="menu-item">
+        <mat-icon>dashboard</mat-icon>
+        <span>Dashboard</span>
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/sales" class="menu-item">
+        <mat-icon>point_of_sale</mat-icon>
+        <span>Ingresos</span>
+      </a>
+      <a routerLink="/expenses" class="menu-item">
+        <mat-icon>receipt_long</mat-icon>
+        <span>Egresos</span>
+      </a>
+
+      <a routerLink="/inventory" class="menu-item active">
+        <mat-icon>inventory_2</mat-icon>
+        <span>Catálogo y Stock</span>
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/profile" class="menu-item">
+        <mat-icon>settings</mat-icon>
+        <span>Configuración</span>
+      </a>
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
+        <mat-icon>logout</mat-icon>
+        <span>Cerrar sesión</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header
+      class="topbar"
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <div class="header-title-wrapper">
+        <button
+          mat-icon-button
+          class="hamburger-btn"
+          (click)="toggleMobileMenu()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+        <h1 class="page-title">Catálogo y Stock</h1>
+      </div>
+
+      <div
+        class="topbar-actions"
+        style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap"
+      >
+        <div class="view-toggle">
+          <button
+            [class.active]="viewMode === 'list'"
+            (click)="viewMode = 'list'"
+          >
+            <mat-icon>view_list</mat-icon>
+          </button>
+          <button
+            [class.active]="viewMode === 'card'"
+            (click)="viewMode = 'card'"
+          >
+            <mat-icon>grid_view</mat-icon>
+          </button>
+        </div>
+
+        <button mat-flat-button color="primary" (click)="openDrawer()">
+          <mat-icon>add</mat-icon> Nuevo Producto
+        </button>
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      <div
+        *ngIf="successMessage"
+        class="alert success-alert"
+        style="margin-bottom: 16px"
+      >
+        <mat-icon>check_circle</mat-icon><span>{{ successMessage }}</span>
+      </div>
+      <div
+        *ngIf="errorMessage"
+        class="alert error-alert"
+        style="margin-bottom: 16px"
+      >
+        <mat-icon>error</mat-icon><span>{{ errorMessage }}</span>
+      </div>
+
+      <div *ngIf="isLoading" class="text-center" style="padding: 40px">
+        <mat-spinner diameter="40" style="margin: 0 auto"></mat-spinner>
+      </div>
+      <div *ngIf="!isLoading && products.length === 0" class="empty-state">
+        <mat-icon>inventory_2</mat-icon>
+        <h3>Tu catálogo está vacío</h3>
+        <p>Añade tu primer producto para empezar a gestionar tu inventario.</p>
+      </div>
+
+      <div
+        class="settings-card table-container"
+        *ngIf="viewMode === 'list' && !isLoading && products.length > 0"
+      >
+        <div class="table-responsive">
+          <table class="kroot-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>SKU</th>
+                <th>Categoría</th>
+                <th>Precio Venta</th>
+                <th>Stock</th>
+                <th>Estado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let p of products"
+                [class.inactive-row]="!p.is_active"
+              >
+                <td>
+                  <div class="list-product-cell">
+                    <div class="list-image-frame">
+                      <img
+                        [src]="p.image_url || 'assets/placeholder.png'"
+                        alt="Img"
+                      />
+                    </div>
+                    <div class="product-info-text">
+                      <strong>{{ p.name }}</strong>
+                      <div class="text-muted" style="font-size: 11px">
+                        Costo: ${{ p.cost_price }}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge-outline">{{ p.sku }}</span>
+                </td>
+                <td>{{ getCategoryName(p.category_id) }}</td>
+                <td class="text-main font-weight-bold">${{ p.sale_price }}</td>
+                <td>
+                  <span
+                    [ngStyle]="{
+                      color:
+                        p.min_stock && p.min_stock > 0
+                          ? p.min_stock > 5
+                            ? '#059669'
+                            : '#dc2626'
+                          : '#0f172a',
+                    }"
+                  >
+                    <strong>{{ p.min_stock }}</strong>
+                    <small>{{ p.unit }}</small>
+                  </span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [ngClass]="p.is_active ? 'badge-success' : 'badge-danger'"
+                  >
+                    {{ p.is_active ? "Activo" : "Inactivo" }}
+                  </span>
+                </td>
+                <td class="text-right">
+                  <button
+                    mat-icon-button
+                    color="primary"
+                    (click)="openDrawer(p)"
+                    matTooltip="Editar"
+                  >
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button
+                    mat-icon-button
+                    [color]="p.is_active ? 'warn' : 'primary'"
+                    (click)="toggleStatus(p.id)"
+                    [matTooltip]="p.is_active ? 'Desactivar' : 'Activar'"
+                  >
+                    <mat-icon>{{
+                      p.is_active ? "block" : "check_circle"
+                    }}</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div
+        class="product-grid"
+        *ngIf="viewMode === 'card' && !isLoading && products.length > 0"
+      >
+        <div
+          class="product-card"
+          *ngFor="let p of products"
+          [class.inactive-card]="!p.is_active"
+          (click)="openDrawer(p)"
+        >
+          <div class="card-image-wrapper">
+            <img
+              [src]="p.image_url || 'assets/placeholder.png'"
+              alt="{{ p.name }}"
+            />
+            <span
+              class="card-status badge"
+              [ngClass]="p.is_active ? 'badge-success' : 'badge-danger'"
+            >
+              {{ p.is_active ? "Activo" : "Inactivo" }}
+            </span>
+          </div>
+
+          <div class="card-content">
+            <div class="category-label">
+              {{ getCategoryName(p.category_id) }}
+            </div>
+            <h3 class="product-name" [matTooltip]="p.name">{{ p.name }}</h3>
+            <div class="product-sku">SKU: {{ p.sku }}</div>
+
+            <div class="card-footer-info">
+              <div class="card-price">${{ p.sale_price | number }}</div>
+              <div
+                class="card-stock"
+                [ngStyle]="{
+                  color: p.stock > p.min_stock ? '#059669' : '#dc2626',
+                }"
+              >
+                <mat-icon>inventory_2</mat-icon>
+                {{ p.stock }} {{ p.unit }}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div
+    class="drawer-overlay"
+    *ngIf="isDrawerOpen"
+    (click)="closeDrawer()"
+  ></div>
+
+  <div class="side-drawer" [class.open]="isDrawerOpen">
+    <div class="drawer-header">
+      <h2>{{ editingProductId ? "Editar Producto" : "Nuevo Producto" }}</h2>
+      <button mat-icon-button (click)="closeDrawer()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <form [formGroup]="productForm" id="product-form" (ngSubmit)="onSubmit()">
+        <div class="form-section-title">Información Básica</div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Nombre del Producto</mat-label>
+            <input
+              matInput
+              formControlName="name"
+              placeholder="Ej. Anillo de Oro 18k"
+            />
+            <mat-error *ngIf="productForm.get('name')?.hasError('required')"
+              >Requerido</mat-error
+            >
+          </mat-form-field>
+        </div>
+
+        <div class="form-row grid-2">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Categoría</mat-label>
+            <mat-select formControlName="category_id">
+              <mat-option *ngFor="let cat of categories" [value]="cat.id">{{
+                cat.name
+              }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>SKU / Código Único</mat-label>
+            <input matInput formControlName="sku" placeholder="Ej. ANI-001" />
+            <mat-error *ngIf="productForm.get('sku')?.hasError('required')"
+              >Requerido</mat-error
+            >
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Código de Barras (Opcional)</mat-label>
+            <input matInput formControlName="barcode" />
+            <mat-icon matPrefix>qr_code_scanner</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section-title">Precios e Inventario</div>
+        <div class="form-row grid-2">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Precio de Venta</mat-label>
+            <input matInput type="number" formControlName="sale_price" />
+            <mat-icon matPrefix>attach_money</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Precio de Costo</mat-label>
+            <input matInput type="number" formControlName="cost_price" />
+            <mat-icon matPrefix>attach_money</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row grid-2">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Stock Actual</mat-label>
+            <input matInput type="number" formControlName="stock" />
+            <mat-icon matPrefix>inventory_2</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Stock Mínimo (Alerta)</mat-label>
+            <input matInput type="number" formControlName="min_stock" />
+            <mat-icon matPrefix>warning</mat-icon>
+          </mat-form-field>
+        </div>
+
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Unidad de Medida</mat-label>
+            <mat-select formControlName="unit">
+              <mat-option value="unidad">Unidad</mat-option>
+              <mat-option value="kg">Kilogramo (kg)</mat-option>
+              <mat-option value="g">Gramo (g)</mat-option>
+              <mat-option value="litro">Litro (L)</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section-title">Detalles</div>
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Descripción detallada</mat-label>
+            <textarea
+              matInput
+              formControlName="description"
+              rows="3"
+              placeholder="Especificaciones, material, peso..."
+            ></textarea>
+          </mat-form-field>
+        </div>
+
+        <div class="form-section-title">Imagen del Producto</div>
+        <div class="image-upload-container" (click)="fileInput.click()">
+          <input
+            type="file"
+            #fileInput
+            (change)="onFileSelected($event)"
+            accept="image/*"
+            style="display: none"
+          />
+          <div class="upload-placeholder" *ngIf="!imagePreview">
+            <mat-icon>add_photo_alternate</mat-icon>
+            <span>Haz clic para adjuntar imagen</span>
+          </div>
+          <img
+            *ngIf="imagePreview"
+            [src]="imagePreview"
+            alt="Vista previa"
+            class="preview-image"
+          />
+        </div>
+      </form>
+    </div>
+
+    <div class="drawer-footer" style="justify-content: space-between">
+      <div>
+        <button
+          *ngIf="editingProductId"
+          mat-button
+          color="warn"
+          type="button"
+          (click)="deleteProduct()"
+          [disabled]="isSaving"
+        >
+          <mat-icon>delete</mat-icon> Eliminar
+        </button>
+      </div>
+      <div style="display: flex; gap: 12px">
+        <button
+          mat-button
+          (click)="closeDrawer()"
+          type="button"
+          [disabled]="isSaving"
+        >
+          Cancelar
+        </button>
+        <button
+          mat-flat-button
+          color="primary"
+          type="submit"
+          form="product-form"
+          [disabled]="productForm.invalid || isSaving"
+        >
+          <span *ngIf="!isSaving">Guardar Producto</span>
+          <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

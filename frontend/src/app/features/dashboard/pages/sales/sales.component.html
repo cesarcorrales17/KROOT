@@ -1,465 +1,222 @@
 <div class="dashboard-layout">
-  <aside class="sidebar">
+  <div
+    class="mobile-menu-overlay"
+    *ngIf="isMobileMenuOpen"
+    (click)="toggleMobileMenu()"
+  ></div>
+
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
     <div class="sidebar-brand">
       <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+      <button
+        mat-icon-button
+        class="close-menu-btn"
+        (click)="toggleMobileMenu()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
     </div>
-
     <nav class="sidebar-menu">
-      <a routerLink="/dashboard" class="menu-item">
-        <mat-icon>dashboard</mat-icon>
-        <span>Dashboard</span>
-      </a>
-      <a routerLink="/sales" class="menu-item active">
-        <mat-icon>point_of_sale</mat-icon>
-        <span>Ingresar Ventas</span>
-      </a>
+      <a routerLink="/dashboard" class="menu-item"
+        ><mat-icon>dashboard</mat-icon><span>Dashboard</span></a
+      >
       <div class="menu-divider"></div>
-      <a routerLink="/profile" class="menu-item">
-        <mat-icon>settings</mat-icon>
-        <span>Configuración</span>
-      </a>
-      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
-        <mat-icon>logout</mat-icon>
-        <span>Cerrar sesión</span>
-      </a>
+      <a routerLink="/sales" class="menu-item active"
+        ><mat-icon>point_of_sale</mat-icon><span>Punto de Venta</span></a
+      >
+      <a routerLink="/expenses" class="menu-item"
+        ><mat-icon>receipt_long</mat-icon><span>Egresos</span></a
+      >
+      <a routerLink="/inventory" class="menu-item"
+        ><mat-icon>inventory_2</mat-icon><span>Catálogo y Stock</span></a
+      >
+      <div class="menu-divider"></div>
+      <a routerLink="/profile" class="menu-item"
+        ><mat-icon>settings</mat-icon><span>Configuración</span></a
+      >
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer"
+        ><mat-icon>logout</mat-icon><span>Cerrar sesión</span></a
+      >
     </nav>
   </aside>
 
-  <main class="main-content">
-    <header class="topbar">
-      <h1 class="page-title">Registro de Ventas</h1>
-    </header>
-
-    <div class="content-wrapper">
-      <div class="split-layout">
-        <!-- ===== FORMULARIO PRINCIPAL ===== -->
-        <div class="form-section">
-          <div *ngIf="successMessage" class="alert success-alert">
-            <mat-icon>check_circle</mat-icon>
-            <span>{{ successMessage }}</span>
-          </div>
-          <div *ngIf="errorMessage" class="alert error-alert">
-            <mat-icon>error</mat-icon>
-            <span>{{ errorMessage }}</span>
-          </div>
-
-          <!-- El form lleva id="sales-form" para que el botón externo lo pueda hacer submit -->
-          <form
-            [formGroup]="salesForm"
-            (ngSubmit)="onSubmit()"
-            id="sales-form"
-            class="settings-form"
+  <main class="pos-main-content">
+    <section class="pos-products-section">
+      <div class="pos-header">
+        <div class="header-title-wrapper">
+          <button
+            mat-icon-button
+            class="hamburger-btn"
+            (click)="toggleMobileMenu()"
           >
-            <!-- SECCIÓN 1: DATOS DEL CLIENTE -->
-            <div class="settings-card form-block">
-              <div class="card-header">
-                <mat-icon>person_outline</mat-icon>
-                <div>
-                  <h2>Datos del Cliente</h2>
-                  <p>Información básica de quien realiza la compra.</p>
-                </div>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Nombre del Cliente</mat-label>
-                  <input
-                    matInput
-                    formControlName="client_name"
-                    placeholder="Ej. Juan Pérez"
-                  />
-                  <mat-icon matPrefix>badge</mat-icon>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Tipo de Cliente</mat-label>
-                  <mat-select formControlName="client_type">
-                    <mat-option *ngFor="let ct of clientTypes" [value]="ct">{{
-                      ct
-                    }}</mat-option>
-                  </mat-select>
-                  <mat-icon matPrefix>group</mat-icon>
-                </mat-form-field>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Teléfono / Email (Opcional)</mat-label>
-                  <input
-                    matInput
-                    formControlName="client_contact"
-                    placeholder="Ej. +57 300 000 0000"
-                  />
-                  <mat-icon matPrefix>contact_phone</mat-icon>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Documento de Identidad (Opcional)</mat-label>
-                  <input
-                    matInput
-                    formControlName="client_document"
-                    placeholder="Ej. 1.020.000.000"
-                  />
-                  <mat-icon matPrefix>fingerprint</mat-icon>
-                </mat-form-field>
-              </div>
-            </div>
-
-            <!-- SECCIÓN 2: DETALLE DEL PRODUCTO / SERVICIO -->
-            <div class="settings-card form-block">
-              <div class="card-header">
-                <mat-icon>inventory_2</mat-icon>
-                <div>
-                  <h2>Detalle del Producto o Servicio</h2>
-                  <p>Especifica qué se vendió y en qué cantidad.</p>
-                </div>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Categoría</mat-label>
-                  <mat-select formControlName="category">
-                    <mat-option *ngFor="let cat of categories" [value]="cat">{{
-                      cat
-                    }}</mat-option>
-                  </mat-select>
-                  <mat-icon matPrefix>category</mat-icon>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Nombre del Producto / Servicio</mat-label>
-                  <input
-                    matInput
-                    formControlName="product_name"
-                    placeholder="Ej. Reparación pantalla"
-                  />
-                  <mat-icon matPrefix>sell</mat-icon>
-                </mat-form-field>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Cantidad</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="quantity"
-                    placeholder="1"
-                    (input)="recalculateAmount()"
-                  />
-                  <mat-icon matPrefix>pin</mat-icon>
-                  <mat-error
-                    *ngIf="salesForm.get('quantity')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                  <mat-error *ngIf="salesForm.get('quantity')?.hasError('min')"
-                    >Mínimo 1</mat-error
-                  >
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Precio Unitario</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="unit_price"
-                    placeholder="Ej. 150000"
-                    (input)="recalculateAmount()"
-                  />
-                  <mat-icon matPrefix>attach_money</mat-icon>
-                  <mat-error
-                    *ngIf="salesForm.get('unit_price')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                  <mat-error
-                    *ngIf="salesForm.get('unit_price')?.hasError('min')"
-                    >Mínimo 0</mat-error
-                  >
-                </mat-form-field>
-              </div>
-
-              <div class="form-row">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label
-                    >Descripción del Producto / Servicio (Opcional)</mat-label
-                  >
-                  <textarea
-                    matInput
-                    formControlName="description"
-                    placeholder="Ej. Cambio de pantalla Samsung A52, incluye mano de obra..."
-                    rows="3"
-                  ></textarea>
-                  <mat-icon matPrefix>notes</mat-icon>
-                </mat-form-field>
-              </div>
-            </div>
-
-            <!-- SECCIÓN 3: INFORMACIÓN FINANCIERA Y DE PAGO -->
-            <div class="settings-card form-block">
-              <div class="card-header">
-                <mat-icon>payments</mat-icon>
-                <div>
-                  <h2>Información Financiera y de Pago</h2>
-                  <p>Detalles del cobro y método de pago utilizado.</p>
-                </div>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Monto Total</mat-label>
-                  <input
-                    matInput
-                    type="number"
-                    formControlName="amount"
-                    placeholder="Se calcula automáticamente"
-                    readonly
-                  />
-                  <mat-icon matPrefix>monetization_on</mat-icon>
-                  <mat-hint>Calculado: cantidad × precio unitario</mat-hint>
-                  <mat-error
-                    *ngIf="salesForm.get('amount')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                  <mat-error *ngIf="salesForm.get('amount')?.hasError('min')"
-                    >Debe ser mayor a 0</mat-error
-                  >
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Método de Pago</mat-label>
-                  <mat-select formControlName="payment_method">
-                    <mat-option
-                      *ngFor="let pm of paymentMethods"
-                      [value]="pm"
-                      >{{ pm }}</mat-option
-                    >
-                  </mat-select>
-                  <mat-icon matPrefix>wallet</mat-icon>
-                </mat-form-field>
-              </div>
-
-              <div class="form-row grid-2">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Estado del Pago</mat-label>
-                  <mat-select formControlName="payment_status">
-                    <mat-option
-                      *ngFor="let ps of paymentStatuses"
-                      [value]="ps.value"
-                      >{{ ps.label }}</mat-option
-                    >
-                  </mat-select>
-                  <mat-icon matPrefix>check_circle_outline</mat-icon>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Período para Estadísticas</mat-label>
-                  <mat-select formControlName="period_type">
-                    <mat-option value="weekly">Semanal</mat-option>
-                    <mat-option value="monthly">Mensual</mat-option>
-                  </mat-select>
-                  <mat-icon matPrefix>date_range</mat-icon>
-                </mat-form-field>
-              </div>
-            </div>
-
-            <!-- SECCIÓN 4: DATOS DE CONTROL -->
-            <div class="settings-card form-block">
-              <div class="card-header">
-                <mat-icon>tune</mat-icon>
-                <div>
-                  <h2>Datos de Control</h2>
-                  <p>Fecha, hora y referencia del comprobante.</p>
-                </div>
-              </div>
-
-              <div class="form-row grid-3">
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Fecha de la Venta</mat-label>
-                  <input
-                    matInput
-                    [matDatepicker]="picker"
-                    formControlName="period_date"
-                  />
-                  <mat-datepicker-toggle
-                    matIconSuffix
-                    [for]="picker"
-                  ></mat-datepicker-toggle>
-                  <mat-datepicker #picker></mat-datepicker>
-                  <mat-error
-                    *ngIf="salesForm.get('period_date')?.hasError('required')"
-                    >Requerido</mat-error
-                  >
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>Hora de la Venta</mat-label>
-                  <input matInput type="time" formControlName="sale_time" />
-                  <mat-icon matPrefix>schedule</mat-icon>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline" class="full-width">
-                  <mat-label>N.° Factura / Comprobante (Opcional)</mat-label>
-                  <input
-                    matInput
-                    formControlName="invoice_ref"
-                    placeholder="Ej. FAC-2025-001"
-                  />
-                  <mat-icon matPrefix>receipt_long</mat-icon>
-                </mat-form-field>
-              </div>
-            </div>
-          </form>
+            <mat-icon>menu</mat-icon>
+          </button>
+          <h1 class="page-title">Punto de Venta</h1>
         </div>
 
-        <!-- ===== PANEL DE RESUMEN ===== -->
-        <div class="summary-section">
-          <div class="summary-sticky">
-            <!-- RESUMEN DE VENTA -->
-            <div class="settings-card summary-card">
-              <div class="summary-card-header">
-                <mat-icon>receipt</mat-icon>
-                <h3>Resumen de Venta</h3>
-              </div>
+        <div class="search-bar">
+          <mat-icon>search</mat-icon>
+          <input
+            type="text"
+            placeholder="Buscar por producto o SKU..."
+            (keyup)="filterProducts($event)"
+          />
+        </div>
+      </div>
 
+      <div class="products-grid-container">
+        <div *ngIf="isLoadingProducts" class="pos-loader">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+
+        <div
+          *ngIf="!isLoadingProducts && filteredProducts.length === 0"
+          class="pos-empty"
+        >
+          <mat-icon>search_off</mat-icon>
+          <p>No se encontraron productos en tu catálogo.</p>
+        </div>
+
+        <div class="pos-grid" *ngIf="!isLoadingProducts">
+          <div
+            class="pos-card"
+            *ngFor="let p of filteredProducts"
+            (click)="addToCart(p)"
+            [class.out-of-stock]="p.stock <= 0"
+          >
+            <div class="pos-card-image">
+              <img
+                [src]="p.image_url || 'assets/placeholder.png'"
+                alt="{{ p.name }}"
+              />
               <div
-                class="summary-client-info"
-                *ngIf="salesForm.get('client_name')?.value"
+                class="stock-badge"
+                [class.low-stock]="p.stock > 0 && p.stock <= 5"
               >
-                <div class="summary-avatar">{{ getClientInitials() }}</div>
-                <div>
-                  <p class="summary-client-name">
-                    {{ salesForm.get("client_name")?.value }}
-                  </p>
-                  <p class="summary-client-type">
-                    {{ salesForm.get("client_type")?.value || "Sin tipo" }}
-                  </p>
-                </div>
-              </div>
-
-              <div class="summary-divider"></div>
-
-              <div class="summary-line-items">
-                <div
-                  class="summary-line"
-                  *ngIf="salesForm.get('product_name')?.value"
-                >
-                  <span class="line-label">Producto/Servicio</span>
-                  <span class="line-value line-product">{{
-                    salesForm.get("product_name")?.value
-                  }}</span>
-                </div>
-                <div class="summary-line">
-                  <span class="line-label">Cantidad</span>
-                  <span class="line-value">{{
-                    salesForm.get("quantity")?.value || 1
-                  }}</span>
-                </div>
-                <div class="summary-line">
-                  <span class="line-label">Precio Unitario</span>
-                  <span class="line-value"
-                    >{{ salesForm.get("unit_price")?.value || 0 | number }}
-                    {{ currentCurrency }}</span
-                  >
-                </div>
-              </div>
-
-              <div class="summary-divider"></div>
-
-              <div class="summary-total-block">
-                <span class="total-label">TOTAL A PAGAR</span>
-                <span class="total-value">
-                  {{ salesForm.get("amount")?.value || 0 | number }}
-                  <small>{{ currentCurrency }}</small>
-                </span>
-              </div>
-
-              <div class="summary-divider"></div>
-
-              <div class="summary-meta">
-                <div
-                  class="meta-item"
-                  *ngIf="salesForm.get('payment_method')?.value"
-                >
-                  <mat-icon>wallet</mat-icon>
-                  <span>{{ salesForm.get("payment_method")?.value }}</span>
-                </div>
-                <div
-                  class="meta-item"
-                  *ngIf="salesForm.get('payment_status')?.value"
-                >
-                  <mat-icon>check_circle_outline</mat-icon>
-                  <span>{{ getPaymentStatusLabel() }}</span>
-                </div>
-                <div
-                  class="meta-item"
-                  *ngIf="salesForm.get('period_date')?.value"
-                >
-                  <mat-icon>event</mat-icon>
-                  <span>{{
-                    salesForm.get("period_date")?.value | date: "dd/MM/yyyy"
-                  }}</span>
-                </div>
-                <div
-                  class="meta-item"
-                  *ngIf="salesForm.get('sale_time')?.value"
-                >
-                  <mat-icon>schedule</mat-icon>
-                  <span>{{ salesForm.get("sale_time")?.value }}</span>
-                </div>
-                <div
-                  class="meta-item"
-                  *ngIf="salesForm.get('invoice_ref')?.value"
-                >
-                  <mat-icon>receipt_long</mat-icon>
-                  <span>{{ salesForm.get("invoice_ref")?.value }}</span>
-                </div>
-              </div>
-
-              <div
-                class="summary-status-badge"
-                [ngClass]="getPaymentStatusClass()"
-              >
-                <mat-icon>{{ getPaymentStatusIcon() }}</mat-icon>
-                {{ getPaymentStatusLabel() }}
+                {{ p.stock <= 0 ? "Agotado" : p.stock + " en stock" }}
               </div>
             </div>
-
-            <!-- MINI STATS -->
-            <div class="settings-card mini-stats-card">
-              <div class="mini-stat">
-                <mat-icon>today</mat-icon>
-                <div>
-                  <span class="mini-stat-label">Ventas hoy</span>
-                  <span class="mini-stat-value">{{ todaySalesCount }}</span>
-                </div>
-              </div>
-              <div class="mini-stat-divider"></div>
-              <div class="mini-stat">
-                <mat-icon>radio_button_checked</mat-icon>
-                <div>
-                  <span class="mini-stat-label">Estado sistema</span>
-                  <span class="mini-stat-value status-active">
-                    <span class="status-dot"></span>Activo
-                  </span>
-                </div>
-              </div>
+            <div class="pos-card-info">
+              <h4>{{ p.name }}</h4>
+              <span class="price">${{ p.sale_price | number }}</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
-            <!-- BOTÓN REGISTRAR — fuera del <form> pero vinculado por form="sales-form" -->
+    <section class="pos-cart-section">
+      <div class="cart-header">
+        <h2>Factura Actual</h2>
+        <button
+          class="icon-btn-warn"
+          matTooltip="Vaciar carrito"
+          (click)="clearCart()"
+          [disabled]="cart.length === 0"
+        >
+          <mat-icon>delete_sweep</mat-icon>
+        </button>
+      </div>
+
+      <div class="cart-billing-section">
+        <div class="billing-group">
+          <label>Datos del Cliente</label>
+          <div class="custom-input-container">
+            <mat-icon>person_outline</mat-icon>
+            <input
+              type="text"
+              placeholder="Nombre (Opcional)"
+              [(ngModel)]="clientName"
+            />
+          </div>
+          <div class="custom-input-container">
+            <mat-icon>badge</mat-icon>
+            <input
+              type="text"
+              placeholder="Documento (Opcional)"
+              [(ngModel)]="clientDocument"
+            />
+          </div>
+        </div>
+
+        <div class="billing-group">
+          <label>Método de Pago</label>
+          <div class="payment-chips">
             <button
-              mat-flat-button
-              type="submit"
-              form="sales-form"
-              class="btn-register-sticky"
-              [disabled]="isSaving || salesForm.invalid"
+              class="chip"
+              [class.active]="paymentMethod === 'Efectivo'"
+              (click)="paymentMethod = 'Efectivo'"
             >
-              <mat-icon *ngIf="!isSaving">add_circle_outline</mat-icon>
-              <span *ngIf="!isSaving">Registrar Venta</span>
-              <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+              <mat-icon>payments</mat-icon> Efectivo
+            </button>
+            <button
+              class="chip"
+              [class.active]="paymentMethod === 'Transferencia'"
+              (click)="paymentMethod = 'Transferencia'"
+            >
+              <mat-icon>swap_horiz</mat-icon> Transf.
+            </button>
+            <button
+              class="chip"
+              [class.active]="paymentMethod === 'Tarjeta'"
+              (click)="paymentMethod = 'Tarjeta'"
+            >
+              <mat-icon>credit_card</mat-icon> Tarjeta
             </button>
           </div>
         </div>
       </div>
-    </div>
+
+      <div class="cart-items-container">
+        <div class="empty-cart-message" *ngIf="cart.length === 0">
+          <mat-icon>shopping_cart_checkout</mat-icon>
+          <p>
+            Toca los productos del panel izquierdo para añadirlos a la venta.
+          </p>
+        </div>
+
+        <div class="cart-item" *ngFor="let item of cart">
+          <div class="item-details">
+            <div class="item-name">{{ item.product.name }}</div>
+            <div class="item-price">
+              ${{ item.product.sale_price | number }} /ud
+            </div>
+          </div>
+
+          <div class="item-controls">
+            <div class="qty-selector">
+              <button class="qty-btn" (click)="decreaseQuantity(item)">
+                <mat-icon>remove</mat-icon>
+              </button>
+              <span class="qty-value">{{ item.quantity }}</span>
+              <button class="qty-btn" (click)="increaseQuantity(item)">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+            <div class="item-subtotal">${{ item.subtotal | number }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cart-footer">
+        <div class="total-row">
+          <span>Total a Cobrar</span>
+          <span class="grand-total">${{ cartTotal | number }}</span>
+        </div>
+
+        <button
+          class="checkout-btn"
+          [disabled]="cart.length === 0 || isProcessingPayment"
+          (click)="checkout()"
+        >
+          <span *ngIf="!isProcessingPayment">Cobrar Venta</span>
+          <mat-spinner
+            *ngIf="isProcessingPayment"
+            diameter="24"
+            color="accent"
+          ></mat-spinner>
+        </button>
+      </div>
+    </section>
   </main>
 </div>

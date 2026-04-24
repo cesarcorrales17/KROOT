@@ -1,0 +1,379 @@
+<div class="dashboard-layout">
+  <div
+    class="mobile-menu-overlay"
+    *ngIf="isMobileMenuOpen"
+    (click)="toggleMobileMenu()"
+  ></div>
+
+  <aside class="sidebar" [class.mobile-open]="isMobileMenuOpen">
+    <div class="sidebar-brand">
+      <img src="assets/logo/logoregister.png" alt="Logo" class="brand-logo" />
+      <button
+        mat-icon-button
+        class="close-menu-btn"
+        (click)="toggleMobileMenu()"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <nav class="sidebar-menu">
+      <a routerLink="/dashboard" class="menu-item">
+        <mat-icon>dashboard</mat-icon><span>Dashboard</span>
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/sales" class="menu-item">
+        <mat-icon>point_of_sale</mat-icon><span>Ingresos</span>
+      </a>
+      <a routerLink="/expenses" class="menu-item active">
+        <mat-icon>receipt_long</mat-icon><span>Egresos</span>
+      </a>
+      <a routerLink="/inventory" class="menu-item">
+        <mat-icon>inventory_2</mat-icon><span>Catálogo y Stock</span>
+      </a>
+      <div class="menu-divider"></div>
+      <a routerLink="/profile" class="menu-item">
+        <mat-icon>settings</mat-icon><span>Configuración</span>
+      </a>
+      <a class="menu-item logout" (click)="logout()" style="cursor: pointer">
+        <mat-icon>logout</mat-icon><span>Cerrar sesión</span>
+      </a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <header
+      class="topbar"
+      style="display: flex; justify-content: space-between; align-items: center"
+    >
+      <div class="header-title-wrapper">
+        <button
+          mat-icon-button
+          class="hamburger-btn"
+          (click)="toggleMobileMenu()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+        <h1 class="page-title">Gestión de Egresos</h1>
+      </div>
+    </header>
+
+    <div class="content-wrapper">
+      <div *ngIf="purchasesActive" class="pos-active-container">
+        <div class="sync-card">
+          <div class="sync-icon-pulse">
+            <mat-icon>inventory</mat-icon>
+          </div>
+          <h2>Sincronización de Compras Activa</h2>
+          <p>
+            Tus gastos se están registrando automáticamente cada vez que
+            confirmas una entrada de inventario o una orden de compra.
+          </p>
+
+          <div class="sync-actions">
+            <button
+              mat-button
+              color="primary"
+              (click)="togglePurchaseIntegration()"
+            >
+              Ingresar gasto administrativo manual
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!purchasesActive" class="split-layout">
+        <div class="form-section">
+          <div *ngIf="successMessage" class="alert success-alert">
+            <mat-icon>check_circle</mat-icon><span>{{ successMessage }}</span>
+          </div>
+          <div *ngIf="errorMessage" class="alert error-alert">
+            <mat-icon>error</mat-icon><span>{{ errorMessage }}</span>
+          </div>
+
+          <form
+            [formGroup]="expenseForm"
+            (ngSubmit)="onSubmit()"
+            id="expense-form"
+            class="settings-form"
+          >
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>request_quote</mat-icon>
+                <div>
+                  <h2>Detalles del Gasto</h2>
+                  <p>Clasifica y asigna el monto de salida.</p>
+                </div>
+              </div>
+
+              <div class="form-row grid-2">
+                <div class="full-width" style="position: relative">
+                  <mat-form-field
+                    appearance="outline"
+                    class="full-width"
+                    *ngIf="!isCreatingCategory"
+                  >
+                    <mat-label>Categoría</mat-label>
+                    <mat-select formControlName="category_id">
+                      <mat-option
+                        *ngFor="let cat of categories"
+                        [value]="cat.id"
+                      >
+                        {{ cat.name }}
+                      </mat-option>
+                    </mat-select>
+                    <mat-icon matPrefix>category</mat-icon>
+
+                    <button
+                      mat-icon-button
+                      matSuffix
+                      (click)="toggleCategoryMode($event)"
+                      matTooltip="Añadir nueva categoría"
+                      type="button"
+                    >
+                      <mat-icon>add_circle</mat-icon>
+                    </button>
+
+                    <mat-error
+                      *ngIf="
+                        expenseForm.get('category_id')?.hasError('required')
+                      "
+                      >Requerido</mat-error
+                    >
+                  </mat-form-field>
+
+                  <mat-form-field
+                    appearance="outline"
+                    class="full-width"
+                    *ngIf="isCreatingCategory"
+                  >
+                    <mat-label>Nueva Categoría Personalizada</mat-label>
+                    <input
+                      matInput
+                      #newCatInput
+                      placeholder="Ej. Suscripciones de Software"
+                      (keyup.enter)="saveNewCategory(newCatInput.value)"
+                    />
+                    <mat-icon matPrefix>add_box</mat-icon>
+
+                    <button
+                      mat-icon-button
+                      matSuffix
+                      color="warn"
+                      (click)="toggleCategoryMode($event)"
+                      [disabled]="isSavingCategory"
+                      type="button"
+                    >
+                      <mat-icon>close</mat-icon>
+                    </button>
+
+                    <button
+                      mat-icon-button
+                      matSuffix
+                      color="primary"
+                      (click)="saveNewCategory(newCatInput.value)"
+                      [disabled]="!newCatInput.value || isSavingCategory"
+                      type="button"
+                    >
+                      <mat-icon *ngIf="!isSavingCategory">check</mat-icon>
+                      <mat-spinner
+                        *ngIf="isSavingCategory"
+                        diameter="20"
+                      ></mat-spinner>
+                    </button>
+                  </mat-form-field>
+                </div>
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Monto Total</mat-label>
+                  <input
+                    matInput
+                    type="number"
+                    formControlName="amount"
+                    placeholder="Ej. 500000"
+                  />
+                  <mat-icon matPrefix>attach_money</mat-icon>
+                  <mat-error *ngIf="expenseForm.get('amount')?.hasError('min')"
+                    >Debe ser mayor a 0</mat-error
+                  >
+                </mat-form-field>
+              </div>
+
+              <div class="form-row">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Descripción / Concepto (Opcional)</mat-label>
+                  <textarea
+                    matInput
+                    formControlName="description"
+                    placeholder="Ej. Pago de arriendo local principal"
+                    rows="2"
+                  ></textarea>
+                  <mat-icon matPrefix>notes</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+
+            <div class="settings-card form-block">
+              <div class="card-header">
+                <mat-icon>storefront</mat-icon>
+                <div>
+                  <h2>Proveedor y Fechas</h2>
+                  <p>A quién se le pagó y cuándo.</p>
+                </div>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Nombre del Proveedor (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="supplier_name"
+                    placeholder="Ej. Inmobiliaria XYZ"
+                  />
+                  <mat-icon matPrefix>business</mat-icon>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>N.° Recibo / Factura (Opcional)</mat-label>
+                  <input
+                    matInput
+                    formControlName="receipt_ref"
+                    placeholder="Ej. FV-8923"
+                  />
+                  <mat-icon matPrefix>receipt</mat-icon>
+                </mat-form-field>
+              </div>
+
+              <div class="form-row grid-2">
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Fecha del Gasto</mat-label>
+                  <input
+                    matInput
+                    [matDatepicker]="picker"
+                    formControlName="period_date"
+                  />
+                  <mat-datepicker-toggle
+                    matIconSuffix
+                    [for]="picker"
+                  ></mat-datepicker-toggle>
+                  <mat-datepicker #picker></mat-datepicker>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="full-width">
+                  <mat-label>Período Contable</mat-label>
+                  <mat-select formControlName="period_type">
+                    <mat-option value="weekly">Semanal</mat-option>
+                    <mat-option value="monthly">Mensual</mat-option>
+                  </mat-select>
+                  <mat-icon matPrefix>date_range</mat-icon>
+                </mat-form-field>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div class="summary-section">
+          <div class="summary-sticky">
+            <div class="settings-card summary-card">
+              <div class="summary-card-header">
+                <mat-icon>account_balance_wallet</mat-icon>
+                <h3>Resumen de Egreso</h3>
+              </div>
+
+              <div class="summary-line-items" style="margin-top: 16px">
+                <div class="summary-line">
+                  <span class="line-label">Categoría</span>
+                  <span class="line-value line-product">{{
+                    getCategoryName()
+                  }}</span>
+                </div>
+                <div
+                  class="summary-line"
+                  *ngIf="expenseForm.get('supplier_name')?.value"
+                >
+                  <span class="line-label">Proveedor</span>
+                  <span class="line-value">{{
+                    expenseForm.get("supplier_name")?.value
+                  }}</span>
+                </div>
+              </div>
+
+              <div class="summary-divider"></div>
+
+              <div class="summary-total-block">
+                <span class="total-label">TOTAL SALIDA</span>
+                <span class="total-value text-danger" style="color: #dc2626">
+                  - {{ expenseForm.get("amount")?.value || 0 | number }}
+                  <small>{{ currentCurrency }}</small>
+                </span>
+              </div>
+            </div>
+
+            <div class="settings-card comparative-widget" *ngIf="summary">
+              <div class="widget-header">
+                <mat-icon>pie_chart</mat-icon>
+                <h4>
+                  Gastos Totales ({{
+                    expenseForm.get("period_type")?.value === "monthly"
+                      ? "Mensual"
+                      : "Semanal"
+                  }})
+                </h4>
+              </div>
+              <div class="widget-body">
+                <div class="stat-row">
+                  <span class="stat-label">Acumulado del Período:</span>
+                  <span class="stat-value text-main" style="font-size: 18px"
+                    >${{ summary.total_period_amount | number }}</span
+                  >
+                </div>
+
+                <div class="summary-divider"></div>
+                <p
+                  style="
+                    font-size: 12px;
+                    color: #64748b;
+                    margin-bottom: 8px;
+                    font-weight: 600;
+                  "
+                >
+                  TOP CATEGORÍAS
+                </p>
+
+                <div
+                  class="stat-row"
+                  *ngFor="
+                    let cat of summary.categories_breakdown | slice: 0 : 3
+                  "
+                >
+                  <span class="stat-label">{{ cat.category_name }}:</span>
+                  <span class="stat-value text-muted"
+                    >{{ cat.percentage }}%</span
+                  >
+                </div>
+                <div
+                  *ngIf="summary.categories_breakdown?.length === 0"
+                  style="font-size: 12px; color: #94a3b8"
+                >
+                  No hay gastos registrados aún.
+                </div>
+              </div>
+            </div>
+
+            <button
+              mat-flat-button
+              type="submit"
+              form="expense-form"
+              class="btn-register-sticky"
+              [disabled]="isSaving || expenseForm.invalid"
+              style="background: #dc2626 !important"
+            >
+              <mat-icon *ngIf="!isSaving">remove_circle_outline</mat-icon>
+              <span *ngIf="!isSaving">Registrar Salida</span>
+              <mat-spinner *ngIf="isSaving" diameter="20"></mat-spinner>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>

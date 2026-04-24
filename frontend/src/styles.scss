@@ -1,18 +1,28 @@
 /* Importar tipografías base */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap');
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@700;800&display=swap");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
 
 /* Importar un tema preconstruido de Material para que los inputs funcionen */
-@import '@angular/material/prebuilt-themes/indigo-pink.css';
+@import "@angular/material/prebuilt-themes/indigo-pink.css";
 
 /* Reseteo básico de la página para que el layout ocupe todo el espacio */
-html, body {
+html,
+body {
   height: 100%;
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: inherit;
+}
+
+/* ================= CORRECCIÓN ANGULAR MATERIAL OVERLAYS ================= */
+/* Fuerza a los menús desplegables a estar por encima de CUALQUIER panel o modal */
+.cdk-overlay-container,
+.cdk-global-overlay-wrapper {
+  z-index: 100000 !important;
 }

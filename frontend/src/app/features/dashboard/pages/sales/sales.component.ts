@@ -1,217 +1,199 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators,
-} from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 
-// MATERIAL DESIGN
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatInputModule } from '@angular/material/input';
-import { MatSelectModule } from '@angular/material/select';
-import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
-// SERVICIO
 import { AuthService } from '../../../../features/auth/services/auth.service';
+
+export interface Product {
+  id: number;
+  name: string;
+  sku: string;
+  sale_price: number;
+  stock: number;
+  image_url?: string;
+}
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+  subtotal: number;
+}
 
 @Component({
   selector: 'app-sales',
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     ReactiveFormsModule,
     RouterLink,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatDatepickerModule,
-    MatNativeDateModule,
+    MatTooltipModule,
+    MatSnackBarModule,
   ],
   templateUrl: './sales.component.html',
   styleUrl: './sales.component.scss',
 })
 export class SalesComponent implements OnInit {
-  salesForm: FormGroup;
-  isSaving = false;
-  successMessage = '';
-  errorMessage = '';
+  // Estado
+  isLoadingProducts = false;
+  isProcessingPayment = false;
+  isMobileMenuOpen = false;
 
-  currentCurrency = 'COP';
-  todaySalesCount = 0;
+  // Datos
+  products: Product[] = [];
+  filteredProducts: Product[] = [];
+  cart: CartItem[] = [];
+  cartTotal = 0;
+  searchQuery = '';
 
-  // ── Opciones de selección ────────────────────────────────────────────────
-  categories = [
-    'Producto Físico',
-    'Servicio',
-    'Reparación',
-    'Suscripción',
-    'Otro',
-  ];
+  // Datos del Cliente y Pago
+  clientName = '';
+  clientDocument = '';
+  paymentMethod = 'Efectivo';
 
-  paymentMethods = ['Efectivo', 'Transferencia', 'Tarjeta', 'Otro'];
-
-  clientTypes = [
-    'Persona Natural',
-    'Empresa',
-    'Cliente Recurrente',
-    'Cliente Nuevo',
-    'Otro',
-  ];
-
-  paymentStatuses = [
-    { value: 'paid', label: 'Pagado' },
-    { value: 'pending', label: 'Pendiente' },
-    { value: 'partial', label: 'Pago Parcial' },
-    { value: 'cancelled', label: 'Cancelado' },
-  ];
-
-  private fb = inject(FormBuilder);
   private authService = inject(AuthService);
+  private snackBar = inject(MatSnackBar);
 
-  constructor() {
-    // Hora actual en formato HH:MM para el campo sale_time
-    const now = new Date();
-    const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  ngOnInit(): void {
+    this.loadProducts();
+  }
 
-    this.salesForm = this.fb.group({
-      // Datos del cliente
-      client_name: [''],
-      client_type: [''],
-      client_contact: [''],
-      client_document: [''],
-
-      // Detalle del producto/servicio
-      category: [''],
-      product_name: [''],
-      quantity: [1, [Validators.required, Validators.min(1)]],
-      unit_price: [0, [Validators.required, Validators.min(0)]],
-      description: [''],
-
-      // Información financiera
-      amount: [
-        { value: 0, disabled: false },
-        [Validators.required, Validators.min(1)],
-      ],
-      payment_method: [''],
-      payment_status: ['paid'],
-      period_type: ['monthly', Validators.required],
-
-      // Datos de control
-      period_date: [new Date(), Validators.required],
-      sale_time: [hhmm],
-      invoice_ref: [''],
+  // ── LÓGICA DE LA INTERFAZ ──
+  toggleMobileMenu(): void {
+    this.isMobileMenuOpen = !this.isMobileMenuOpen;
+  }
+  // ── CATÁLOGO DE PRODUCTOS (DESDE LA BASE DE DATOS) ──
+  loadProducts(): void {
+    this.isLoadingProducts = true;
+    this.authService.getProducts().subscribe({
+      next: (data: any[]) => {
+        this.products = data.filter((p) => p.is_active);
+        this.filteredProducts = [...this.products];
+        this.isLoadingProducts = false;
+      },
+      error: () => {
+        this.isLoadingProducts = false;
+        this.showMessage('Error al cargar el catálogo');
+      },
     });
   }
 
-  ngOnInit(): void {
-    this.loadTodaySalesCount();
+  filterProducts(event: Event): void {
+    const query = (event.target as HTMLInputElement).value.toLowerCase();
+    this.searchQuery = query;
+    this.filteredProducts = this.products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(query) ||
+        p.sku.toLowerCase().includes(query),
+    );
   }
 
-  // ── Cálculo automático del monto ─────────────────────────────────────────
-  recalculateAmount(): void {
-    const qty = parseFloat(this.salesForm.get('quantity')?.value) || 0;
-    const price = parseFloat(this.salesForm.get('unit_price')?.value) || 0;
-    this.salesForm.patchValue({ amount: qty * price }, { emitEvent: false });
-  }
-
-  // ── Helpers para el panel de resumen ─────────────────────────────────────
-  getClientInitials(): string {
-    const name: string = this.salesForm.get('client_name')?.value || '';
-    return name
-      .split(' ')
-      .slice(0, 2)
-      .map((w: string) => w.charAt(0).toUpperCase())
-      .join('');
-  }
-
-  getPaymentStatusLabel(): string {
-    const val = this.salesForm.get('payment_status')?.value;
-    return this.paymentStatuses.find((s) => s.value === val)?.label ?? '';
-  }
-
-  getPaymentStatusClass(): string {
-    const map: Record<string, string> = {
-      paid: 'status-paid',
-      pending: 'status-pending',
-      partial: 'status-partial',
-      cancelled: 'status-cancelled',
-    };
-    return map[this.salesForm.get('payment_status')?.value] ?? 'status-default';
-  }
-
-  getPaymentStatusIcon(): string {
-    const map: Record<string, string> = {
-      paid: 'check_circle',
-      pending: 'schedule',
-      partial: 'timelapse',
-      cancelled: 'cancel',
-    };
-    return map[this.salesForm.get('payment_status')?.value] ?? 'info';
-  }
-
-  // ── Carga de ventas de hoy (conectar cuando exista el endpoint) ───────────
-  loadTodaySalesCount(): void {
-    this.todaySalesCount = 0;
-  }
-
-  // ── Envío del formulario ──────────────────────────────────────────────────
-  onSubmit(): void {
-    if (this.salesForm.invalid) {
-      this.salesForm.markAllAsTouched();
+  // ── LÓGICA DEL CARRITO ──
+  addToCart(product: Product): void {
+    if (product.stock <= 0) {
+      this.showMessage('Producto sin stock disponible');
       return;
     }
 
-    this.isSaving = true;
-    this.successMessage = '';
-    this.errorMessage = '';
+    const existingItem = this.cart.find(
+      (item) => item.product.id === product.id,
+    );
 
-    const formValue = { ...this.salesForm.value };
-
-    // Formatea la fecha a YYYY-MM-DD para FastAPI
-    if (formValue.period_date) {
-      const d = new Date(formValue.period_date);
-      formValue.period_date = d.toISOString().split('T')[0];
+    if (existingItem) {
+      if (existingItem.quantity >= product.stock) {
+        this.showMessage('Límite de stock alcanzado');
+        return;
+      }
+      existingItem.quantity++;
+      existingItem.subtotal = existingItem.quantity * product.sale_price;
+    } else {
+      this.cart.push({ product, quantity: 1, subtotal: product.sale_price });
     }
+    this.calculateTotal();
+  }
 
-    this.authService.createSale(formValue).subscribe({
+  increaseQuantity(item: CartItem): void {
+    if (item.quantity >= item.product.stock) {
+      this.showMessage('Límite de stock alcanzado');
+      return;
+    }
+    item.quantity++;
+    item.subtotal = item.quantity * item.product.sale_price;
+    this.calculateTotal();
+  }
+
+  decreaseQuantity(item: CartItem): void {
+    if (item.quantity > 1) {
+      item.quantity--;
+      item.subtotal = item.quantity * item.product.sale_price;
+    } else {
+      this.removeFromCart(item);
+    }
+    this.calculateTotal();
+  }
+
+  removeFromCart(item: CartItem): void {
+    this.cart = this.cart.filter(
+      (cartItem) => cartItem.product.id !== item.product.id,
+    );
+    this.calculateTotal();
+  }
+
+  clearCart(): void {
+    this.cart = [];
+    this.clientName = '';
+    this.clientDocument = '';
+    this.paymentMethod = 'Efectivo';
+    this.calculateTotal();
+  }
+
+  calculateTotal(): void {
+    this.cartTotal = this.cart.reduce((acc, item) => acc + item.subtotal, 0);
+  }
+
+  // ── PROCESAR COBRO ──
+  checkout(): void {
+    if (this.cart.length === 0) return;
+    this.isProcessingPayment = true;
+
+    const saleData = {
+      client_name: this.clientName || 'Cliente de Mostrador',
+      client_document: this.clientDocument,
+      payment_method: this.paymentMethod,
+      details: this.cart.map((item) => ({
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unit_price: item.product.sale_price,
+      })),
+    };
+
+    this.authService.createPosSale(saleData).subscribe({
       next: () => {
-        this.isSaving = false;
-        this.successMessage = 'Venta registrada correctamente.';
-        this.todaySalesCount++;
-
-        // Limpia solo los campos variables; conserva fecha, hora y período
-        const now = new Date();
-        const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-
-        this.salesForm.patchValue({
-          client_name: '',
-          client_contact: '',
-          client_document: '',
-          product_name: '',
-          quantity: 1,
-          unit_price: 0,
-          amount: 0,
-          invoice_ref: '',
-          description: '',
-          sale_time: hhmm,
-        });
-
-        setTimeout(() => (this.successMessage = ''), 4000);
+        this.isProcessingPayment = false;
+        this.showMessage('¡Venta procesada con éxito!');
+        this.clearCart();
+        this.loadProducts(); // Recarga los productos para actualizar el stock real en pantalla
       },
       error: (err) => {
-        this.isSaving = false;
-        this.errorMessage = err.error?.detail || 'Error al registrar la venta.';
+        this.isProcessingPayment = false;
+        this.showMessage(err.error?.detail || 'Error al procesar la venta');
       },
+    });
+  }
+
+  private showMessage(msg: string): void {
+    this.snackBar.open(msg, 'Cerrar', {
+      duration: 3000,
+      horizontalPosition: 'right',
+      verticalPosition: 'bottom',
     });
   }
 

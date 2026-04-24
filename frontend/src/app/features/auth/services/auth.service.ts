@@ -132,7 +132,7 @@ export class AuthService {
   // ==========================================
   createSale(saleData: any): Observable<any> {
     return this.http.post<any>(
-      `${this.apiUrl}/sales`,
+      `${this.apiUrl}/sales/manual`,
       saleData,
       this.getHeaders(),
     );
@@ -141,6 +141,86 @@ export class AuthService {
   getSalesSummary(periodType: string = 'monthly'): Observable<any> {
     return this.http.get<any>(
       `${this.apiUrl}/sales/summary?period_type=${periodType}`,
+      this.getHeaders(),
+    );
+  }
+  // Enviar Venta del Punto de Venta (POS)
+  createPosSale(saleData: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/sales/pos`,
+      saleData,
+      this.getHeaders(),
+    );
+  }
+
+  // ==========================================
+  // GASTOS OPERATIVOS (ÉPICA 9)
+  // ==========================================
+  getExpenseCategories(): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/expenses/categories`,
+      this.getHeaders(),
+    );
+  }
+
+  createExpenseCategory(categoryData: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/expenses/categories`,
+      categoryData,
+      this.getHeaders(),
+    );
+  }
+
+  createManualExpense(expenseData: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/expenses/manual`,
+      expenseData,
+      this.getHeaders(),
+    );
+  }
+
+  getExpensesSummary(periodType: string = 'monthly'): Observable<any> {
+    return this.http.get<any>(
+      `${this.apiUrl}/expenses/summary?period_type=${periodType}`,
+      this.getHeaders(),
+    );
+  }
+
+  // ==========================================
+  // CATÁLOGO E INVENTARIO (ÉPICA 10)
+  // ==========================================
+
+  getProducts(): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/products`, this.getHeaders());
+  }
+
+  createProduct(productData: any): Observable<any> {
+    return this.http.post<any>(
+      `${this.apiUrl}/products`,
+      productData,
+      this.getHeaders(),
+    );
+  }
+
+  updateProduct(productId: number, productData: any): Observable<any> {
+    return this.http.put<any>(
+      `${this.apiUrl}/products/${productId}`,
+      productData,
+      this.getHeaders(),
+    );
+  }
+
+  deleteProduct(productId: number): Observable<any> {
+    return this.http.delete<any>(
+      `${this.apiUrl}/products/${productId}`,
+      this.getHeaders(),
+    );
+  }
+
+  toggleProductStatus(productId: number): Observable<any> {
+    return this.http.patch<any>(
+      `${this.apiUrl}/products/${productId}/status`,
+      {},
       this.getHeaders(),
     );
   }

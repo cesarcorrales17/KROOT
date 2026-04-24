@@ -54,6 +54,7 @@ export const routes: Routes = [
   },
   {
     path: 'profile',
+    canActivate: [authGuard], // Seguridad añadida
     loadComponent: () =>
       import('./features/dashboard/pages/profile/profile.component').then(
         (m) => m.ProfileComponent,
@@ -61,9 +62,26 @@ export const routes: Routes = [
   },
   {
     path: 'sales',
+    canActivate: [authGuard], // Seguridad añadida
     loadComponent: () =>
       import('./features/dashboard/pages/sales/sales.component').then(
         (m) => m.SalesComponent,
+      ),
+  },
+  {
+    path: 'expenses',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/expenses/expenses.component').then(
+        (m) => m.ExpensesComponent,
+      ),
+  },
+  {
+    path: 'inventory',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/dashboard/pages/inventory/inventory.component').then(
+        (m) => m.InventoryComponent,
       ),
   },
 ];

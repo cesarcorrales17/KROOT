@@ -4,8 +4,10 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import uuid
+from typing import List
+import logging
 
 # Librerías para Rate Limiting
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -14,7 +16,7 @@ from slowapi.errors import RateLimitExceeded
 
 # Importaciones internas
 from app import models, schemas, security, email_service
-from app.database import engine, get_db
+from app.database import engine, get_db, SessionLocal
 from app.business_rules import SECTOR_CONFIGS, BUSINESS_TYPES
 
 # Inicialización de base de datos
@@ -43,6 +45,94 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Configuración de logging para la inicialización
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("kroot.startup")
+
+def init_default_expense_categories(db: Session):
+    """
+    Verifica e inyecta las categorias de gastos por defecto para cualquier tipo de negocio.
+    Usa inserciones en bloque para optimizar el rendimiento.
+    """
+    try:
+        # Categorías estándar para cualquier modelo de negocio
+        default_names = [
+            'Arriendo', 
+            'Nómina', 
+            'Servicios Públicos', 
+            'Marketing / Publicidad', 
+            'Insumos / Materia Prima', 
+            'Mantenimiento',
+            'Logística y Envíos',
+            'Otros'
+        ]
+        
+        existing_categories = db.query(models.ExpenseCategory.name).filter(
+            models.ExpenseCategory.name.in_(default_names),
+            models.ExpenseCategory.is_default == True
+        ).all()
+        
+        existing_names = {cat[0] for cat in existing_categories}
+        
+        missing_categories = [
+            models.ExpenseCategory(name=name, is_default=True)
+            for name in default_names if name not in existing_names
+        ]
+        
+        if missing_categories:
+            db.add_all(missing_categories)
+            db.commit()
+            logger.info(f"Se agregaron {len(missing_categories)} categorias base al sistema.")
+        else:
+            logger.info("Las categorias base ya se encuentran sincronizadas.")
+            
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error critico al inicializar categorias de gastos: {str(e)}")
+
+# Inicializamos las categorías por defecto al arrancar la aplicación
+def init_default_product_categories(db: Session):
+    """
+    Verifica e inyecta las categorias de productos por defecto.
+    """
+    try:
+        default_names = ['General', 'Servicios', 'Productos Fisicos', 'Insumos']
+        
+        existing_categories = db.query(models.ProductCategory.name).filter(
+            models.ProductCategory.name.in_(default_names),
+            models.ProductCategory.is_default == True
+        ).all()
+        
+        existing_names = {cat[0] for cat in existing_categories}
+        
+        missing_categories = [
+            models.ProductCategory(name=name, is_default=True)
+            for name in default_names if name not in existing_names
+        ]
+        
+        if missing_categories:
+            db.add_all(missing_categories)
+            db.commit()
+            logger.info(f"Se agregaron {len(missing_categories)} categorias de productos base al sistema.")
+            
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error critico al inicializar categorias de productos: {str(e)}")
+        
+@app.on_event("startup")
+def startup_event():
+    db = SessionLocal()
+    try:
+        init_default_expense_categories(db)
+        init_default_product_categories(db) 
+    finally:
+        db.close()
+
+
+
+# ==========================================
+# SEGURIDAD Y AUTENTICACIÓN
+# ==========================================
 # Configuración de seguridad para lectura de tokens
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
@@ -458,22 +548,21 @@ def get_dashboard_summary(
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(get_current_user)
 ):
-    """Calcula los KPIs y los datos para los gráficos del Dashboard."""
+    """Calcula los KPIs y los datos para los gráficos del Dashboard leyendo la nueva tabla Sale."""
     
     # 1. Buscamos el negocio del usuario
     business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
-    # 2. Buscamos las transacciones
-    # NOTA TECH LEAD: Asegúrate de que el modelo se llame 'Transaction' o cambialo a 'Sale' si estás usando la tabla que creamos ayer.
-    transactions = db.query(models.Transaction).filter(models.Transaction.business_id == business.id).all()
+    # 2. Buscamos las ventas reales en la tabla correcta (Sale)
+    sales = db.query(models.Sale).filter(models.Sale.business_id == business.id).all()
     
-    # ARRAY BASE: Días de la semana para que la gráfica tenga un eje X temporal real
+    # ARRAY BASE: Días de la semana para que la gráfica tenga un eje X
     dias_semana = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Hoy"]
     
-    # Si no hay transacciones, devolvemos el estado vacío pero con el esqueleto de la gráfica
-    if not transactions:
+    # Si no hay ventas, devolvemos el estado vacío
+    if not sales:
         return {
             "has_data": False,
             "currency": business.currency or "COP",
@@ -485,13 +574,13 @@ def get_dashboard_summary(
             }
         }
 
-    # 3. Calcular KPIs reales
-    total_inc = sum(t.amount for t in transactions if t.transaction_type == 'ingreso')
-    total_exp = sum(t.amount for t in transactions if t.transaction_type == 'gasto')
+    # 3. Calcular KPIs reales (Sumamos todos los montos de la tabla Sale)
+    total_inc = sum(s.amount for s in sales)
     
-    # 4. Agrupar para los Gráficos
-    # TODO: En el futuro esto agrupará por día real. 
-    # Por ahora, simulamos la curva poniendo el total en el día "Hoy" y el resto en 0.
+    # Los gastos serán 0 hasta que hagamos la pantalla de "Registrar Gastos"
+    total_exp = 0.0 
+    
+    # 4. Retornamos los datos armados para las gráficas
     return {
         "has_data": True,
         "currency": business.currency or "COP",
@@ -506,20 +595,19 @@ def get_dashboard_summary(
             "expense_data": [0, 0, 0, 0, 0, 0, total_exp]
         }
     }
-    
    
 # ==========================================
 # ENDPOINTS PARA GESTIÓN DE VENTAS
 # ==========================================
 
-# Endpoint para crear un registro de venta con validación de monto positivo 
-@app.post("/sales", response_model=schemas.SaleResponse)
-def create_sale(
+@app.post("/sales/manual", response_model=schemas.SaleResponse)
+def create_manual_sale(
     sale_data: schemas.SaleCreate, 
     db: Session = Depends(get_db), 
     current_user: models.User = Depends(get_current_user)
 ):
-    """Guarda un registro de ventas validando que el monto sea positivo."""
+    """Guarda un registro de ventas ingresado manualmente (Fallback) con todos sus detalles."""
+    
     if sale_data.amount < 0:
         raise HTTPException(status_code=400, detail="El monto de venta no puede ser negativo.")
 
@@ -527,11 +615,29 @@ def create_sale(
     if not business:
         raise HTTPException(status_code=404, detail="Negocio no encontrado")
 
+    # Mapeamos TODOS los campos de la base de datos que limpiamos en el modelo
     new_sale = models.Sale(
         business_id=business.id,
+        source="manual", # Forzamos que cumpla la HU indicando que es digitado a mano
+        
         amount=sale_data.amount,
         period_type=sale_data.period_type,
-        period_date=sale_data.period_date
+        period_date=sale_data.period_date,
+        category=sale_data.category,
+        payment_method=sale_data.payment_method,
+        description=sale_data.description,
+        
+        client_name=sale_data.client_name,
+        client_type=sale_data.client_type,
+        client_contact=sale_data.client_contact,
+        client_document=sale_data.client_document,
+        
+        product_name=sale_data.product_name,
+        quantity=sale_data.quantity,
+        unit_price=sale_data.unit_price,
+        
+        payment_status=sale_data.payment_status,
+        invoice_ref=sale_data.invoice_ref
     )
     
     db.add(new_sale)
@@ -540,7 +646,7 @@ def create_sale(
     
     return new_sale
 
-# Endpoint para obtener el resumen de ventas comparando el período actual con el anterior, mostrando la diferencia porcentual y la tendencia visual (sube, baja, neutral).
+
 @app.get("/sales/summary", response_model=schemas.SalesSummary)
 def get_sales_summary(
     period_type: str = "monthly", 
@@ -548,10 +654,12 @@ def get_sales_summary(
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Obtiene las ventas del período actual y el anterior para calcular 
-    la diferencia porcentual y la tendencia.
+    Obtiene TODAS las ventas (Manuales y POS) agrupadas por período actual vs anterior 
+    para calcular la diferencia porcentual real del negocio.
     """
     business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
     
     # Traemos las ventas ordenadas de la más reciente a la más antigua
     sales = db.query(models.Sale)\
@@ -559,7 +667,7 @@ def get_sales_summary(
         .order_by(models.Sale.period_date.desc())\
         .all()
 
-    # Si no hay ventas, devolvemos todo en cero
+    # Si no hay ventas, devolvemos todo en cero para el estado vacío
     if not sales:
         return {
             "current_period_amount": 0.0,
@@ -569,20 +677,31 @@ def get_sales_summary(
             "trend": "neutral"
         }
 
-    # Asumimos que el primer registro es el actual y el segundo el anterior
-    # (En una versión avanzada usaríamos lógica de fechas exacta con librerías como relativedelta)
-    current_sale = sales[0].amount
-    previous_sale = sales[1].amount if len(sales) > 1 else 0.0
+    # AGRUPACIÓN LÓGICA: Como ahora habrá múltiples ventas por día/mes, debemos sumarlas.
+    grouped_sales = {}
+    for sale in sales:
+        # Usamos la fecha como llave agrupadora
+        date_str = sale.period_date.strftime("%Y-%m-%d")
+        if date_str not in grouped_sales:
+            grouped_sales[date_str] = 0.0
+        grouped_sales[date_str] += sale.amount
+
+    # Obtenemos los períodos únicos, ordenados del más reciente al más antiguo
+    unique_periods = sorted(grouped_sales.keys(), reverse=True)
+
+    # El índice 0 es el período actual, el índice 1 es el período anterior
+    current_sale = grouped_sales[unique_periods[0]]
+    previous_sale = grouped_sales[unique_periods[1]] if len(unique_periods) > 1 else 0.0
 
     diff_amount = current_sale - previous_sale
     
-    # Prevenir división por cero
+    # Prevenir división por cero matemáticamente
     if previous_sale > 0:
         diff_percentage = (diff_amount / previous_sale) * 100
     else:
         diff_percentage = 100.0 if current_sale > 0 else 0.0
 
-    # Definir tendencia visual
+    # Definir tendencia visual para la UI
     if diff_amount > 0:
         trend = "up"
     elif diff_amount < 0:
@@ -596,4 +715,344 @@ def get_sales_summary(
         "difference_amount": diff_amount,
         "difference_percentage": round(diff_percentage, 2),
         "trend": trend
+    }
+    
+    
+# ==========================================
+# ENDPOINTS PARA GESTIÓN DE GASTOS
+# ==========================================
+
+@app.get("/expenses/categories", response_model=List[schemas.ExpenseCategoryResponse])
+def get_expense_categories(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Obtiene las categorías de gastos predefinidas y las personalizadas de la empresa."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # Trae categorías globales (business_id == None) y las creadas por este negocio
+    categories = db.query(models.ExpenseCategory).filter(
+        (models.ExpenseCategory.business_id == None) | 
+        (models.ExpenseCategory.business_id == business.id)
+    ).all()
+    
+    return categories
+
+@app.post("/expenses/categories", response_model=schemas.ExpenseCategoryResponse)
+def create_expense_category(
+    category_data: schemas.ExpenseCategoryBase, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Crea una nueva categoría de gasto personalizada para la empresa."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    new_category = models.ExpenseCategory(
+        business_id=business.id,
+        name=category_data.name,
+        is_default=False # Las creadas por el usuario no son globales
+    )
+    
+    db.add(new_category)
+    db.commit()
+    db.refresh(new_category)
+    
+    return new_category
+
+@app.post("/expenses/manual", response_model=schemas.ExpenseResponse)
+def create_manual_expense(
+    expense_data: schemas.ExpenseCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Guarda un registro de gasto operativo ingresado manualmente."""
+    if expense_data.amount <= 0:
+        raise HTTPException(status_code=400, detail="El monto del gasto debe ser mayor a cero.")
+
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    new_expense = models.Expense(
+        business_id=business.id,
+        category_id=expense_data.category_id,
+        source="manual", # Cumplimiento de la HU Dual
+        amount=expense_data.amount,
+        period_type=expense_data.period_type,
+        period_date=expense_data.period_date,
+        supplier_name=expense_data.supplier_name,
+        description=expense_data.description,
+        receipt_ref=expense_data.receipt_ref
+    )
+    
+    db.add(new_expense)
+    db.commit()
+    db.refresh(new_expense)
+    
+    return new_expense
+
+@app.get("/expenses/summary", response_model=schemas.ExpenseSummary)
+def get_expenses_summary(
+    period_type: str = "monthly", 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Calcula el total de gastos y el desglose porcentual por categoría."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # Buscar todos los gastos del período (manuales y automáticos)
+    expenses = db.query(models.Expense).filter(
+        models.Expense.business_id == business.id, 
+        models.Expense.period_type == period_type
+    ).all()
+
+    total_amount = sum(e.amount for e in expenses)
+    
+    if total_amount == 0:
+        return {"total_period_amount": 0.0, "categories_breakdown": []}
+
+    # Agrupar sumando por categoría
+    category_totals = {}
+    for expense in expenses:
+        # Buscamos el nombre de la categoría usando la relación
+        cat_name = expense.category.name if expense.category else "Sin Categoría"
+        if cat_name not in category_totals:
+            category_totals[cat_name] = 0.0
+        category_totals[cat_name] += expense.amount
+
+    # Construir el desglose con porcentajes
+    breakdown = []
+    for name, amount in category_totals.items():
+        percentage = (amount / total_amount) * 100
+        breakdown.append({
+            "category_name": name,
+            "total_amount": amount,
+            "percentage": round(percentage, 2)
+        })
+
+    # Ordenar de mayor gasto a menor gasto
+    breakdown.sort(key=lambda x: x["total_amount"], reverse=True)
+
+    return {
+        "total_period_amount": total_amount,
+        "categories_breakdown": breakdown
+    }
+    
+
+# ==========================================
+# ENDPOINTS PARA CATÁLOGO E INVENTARIO
+# ==========================================
+
+@app.post("/products", response_model=schemas.ProductResponse)
+def create_product(
+    product_data: schemas.ProductCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Crea un nuevo producto en el catálogo validando que el SKU sea único para la empresa."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    # Validación estricta: El SKU no se puede repetir en la misma empresa
+    existing_product = db.query(models.Product).filter(
+        models.Product.business_id == business.id,
+        models.Product.sku == product_data.sku
+    ).first()
+    
+    if existing_product:
+        raise HTTPException(status_code=400, detail="Ya existe un producto registrado con este SKU.")
+
+    new_product = models.Product(
+        business_id=business.id,
+        **product_data.model_dump() # Usar .dict() si usas Pydantic v1
+    )
+    
+    db.add(new_product)
+    db.commit()
+    db.refresh(new_product)
+    
+    return new_product
+
+@app.get("/products", response_model=List[schemas.ProductResponse])
+def get_products(
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Obtiene la lista completa de productos del negocio."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    products = db.query(models.Product).filter(models.Product.business_id == business.id).all()
+    return products
+
+@app.put("/products/{product_id}", response_model=schemas.ProductResponse)
+def update_product(
+    product_id: int,
+    product_data: schemas.ProductUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Actualiza los datos de un producto existente."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    product = db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.business_id == business.id
+    ).first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # Si se está intentando cambiar el SKU, debemos validar que el nuevo SKU no esté ocupado
+    if product_data.sku and product_data.sku != product.sku:
+        existing_product = db.query(models.Product).filter(
+            models.Product.business_id == business.id,
+            models.Product.sku == product_data.sku
+        ).first()
+        if existing_product:
+            raise HTTPException(status_code=400, detail="El nuevo SKU ya está en uso por otro producto.")
+
+    # Actualización dinámica: Solo modifica los campos que se enviaron en la petición
+    update_data = product_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(product, key, value)
+
+    db.commit()
+    db.refresh(product)
+    return product
+
+@app.delete("/products/{product_id}")
+def delete_product(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Elimina un producto físicamente de la base de datos."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    product = db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.business_id == business.id
+    ).first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    db.delete(product)
+    db.commit()
+    return {"message": "Producto eliminado exitosamente"}
+
+@app.patch("/products/{product_id}/status", response_model=schemas.ProductResponse)
+def toggle_product_status(
+    product_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """Activa o desactiva un producto sin eliminarlo de la base de datos (Soft Delete)."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    product = db.query(models.Product).filter(
+        models.Product.id == product_id,
+        models.Product.business_id == business.id
+    ).first()
+
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
+    # Invierte el estado actual
+    product.is_active = not product.is_active
+    
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+# ==========================================
+# ENDPOINTS DE VENTAS (POS)
+# ==========================================
+
+@app.post("/sales/pos")
+def create_pos_sale(
+    sale_data: schemas.SaleCreate, 
+    db: Session = Depends(get_db), 
+    current_user: models.User = Depends(get_current_user)
+):
+    """Procesa una venta múltiple desde el POS y descuenta stock automáticamente."""
+    business = db.query(models.Business).filter(models.Business.user_id == current_user.id).first()
+    if not business:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+
+    if not sale_data.details:
+        raise HTTPException(status_code=400, detail="El carrito de compras está vacío.")
+
+    # 1. Crear la Cabecera de la Venta (Llenando tus campos obligatorios)
+    total_sale = 0.0
+    new_sale = models.Sale(
+        business_id=business.id,
+        source="pos", # Identificamos que viene del sistema de caja
+        amount=0.0,   # Se actualizará al final
+        period_type="monthly", 
+        period_date=date.today(),
+        category="Venta de Inventario",
+        client_name=sale_data.client_name or "Cliente General",
+        client_document=sale_data.client_document,
+        payment_method=sale_data.payment_method,
+        payment_status="Pagado"
+    )
+    db.add(new_sale)
+    db.flush()
+
+    # 2. Procesar el Carrito y Descontar Stock
+    for item in sale_data.details:
+        product = db.query(models.Product).filter(
+            models.Product.id == item.product_id,
+            models.Product.business_id == business.id
+        ).with_for_update().first() 
+
+        if not product:
+            db.rollback()
+            raise HTTPException(status_code=404, detail=f"Producto no encontrado.")
+        
+        if product.stock < item.quantity:
+            db.rollback()
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Stock insuficiente para: {product.name}. Disponible: {product.stock}"
+            )
+
+        product.stock -= item.quantity
+        subtotal = item.quantity * item.unit_price
+        total_sale += subtotal
+
+        new_detail = models.SaleDetail(
+            sale_id=new_sale.id,
+            product_id=product.id,
+            quantity=item.quantity,
+            unit_price=item.unit_price,
+            subtotal=subtotal
+        )
+        db.add(new_detail)
+
+    # 3. Guardar Total Real
+    new_sale.amount = total_sale
+    db.commit()
+    
+    return {
+        "message": "Venta procesada con éxito", 
+        "sale_id": new_sale.id, 
+        "total": total_sale
     }
