@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   ReactiveFormsModule,
@@ -6,7 +6,7 @@ import {
   FormGroup,
   Validators,
 } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router'; // <-- IMPORTACIÓN DEL ENRUTADOR
+import { Router, RouterLink } from '@angular/router'; 
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
@@ -15,22 +15,16 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { trigger, transition, style, animate } from '@angular/animations';
 
-// IMPORTACIÓN DE SERVICIOS
 import { AuthService } from '../../services/auth.service';
 
-// CONFIGURACIÓN DEL COMPONENTE Y ANIMACIONES
+declare var google: any;
+
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
-    CommonModule,
-    ReactiveFormsModule,
-    RouterLink,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatButtonModule,
-    MatCheckboxModule,
+    CommonModule, ReactiveFormsModule, RouterLink, MatFormFieldModule,
+    MatInputModule, MatIconModule, MatButtonModule, MatCheckboxModule,
     MatProgressSpinnerModule,
   ],
   templateUrl: './login.component.html',
@@ -39,28 +33,22 @@ import { AuthService } from '../../services/auth.service';
     trigger('fadeInUp', [
       transition(':enter', [
         style({ opacity: 0, transform: 'translateY(20px)' }),
-        animate(
-          '0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-          style({ opacity: 1, transform: 'translateY(0)' }),
-        ),
+        animate('0.6s cubic-bezier(0.16, 1, 0.3, 1)', style({ opacity: 1, transform: 'translateY(0)' })),
       ]),
     ]),
   ],
 })
-export class LoginComponent {
-  // ESTADO DE LA INTERFAZ
+export class LoginComponent implements OnInit {
   loginForm: FormGroup;
   hidePassword = true;
   logoError = false;
   isLoading = false;
   errorMessage = '';
 
-  // INYECCIÓN DE DEPENDENCIAS
   private authService = inject(AuthService);
-  private router = inject(Router); // <-- INYECCIÓN DEL ENRUTADOR
+  private router = inject(Router);
 
   constructor(private fb: FormBuilder) {
-    // INICIALIZACIÓN DEL FORMULARIO
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(8)]],
@@ -68,61 +56,56 @@ export class LoginComponent {
     });
   }
 
-  // MANEJO DE IMAGEN FALLIDA
+  ngOnInit(): void {
+    if (typeof google !== 'undefined') {
+      google.accounts.id.initialize({
+        // RECUERDA PONER TU CLIENT ID REAL AQUÍ PARA QUE FUNCIONE LA VENTANA
+        client_id: "TU_CLIENT_ID_DE_GOOGLE.apps.googleusercontent.com", 
+        callback: this.handleGoogleResponse.bind(this)
+      });
+
+      // Renderiza el botón oficial pero quedará invisible gracias al HTML
+      google.accounts.id.renderButton(
+        document.getElementById("google-btn-container"),
+        { theme: "outline", size: "large", type: "standard", width: 400 } 
+      );
+    }
+  }
+
   handleLogoError() {
     this.logoError = true;
   }
 
-  // PROCESAMIENTO DEL FORMULARIO
-  // PROCESAMIENTO DEL FORMULARIO
   onSubmit() {
     if (this.loginForm.valid) {
       this.isLoading = true;
       this.errorMessage = '';
-
       const loginData = this.loginForm.value;
 
-      // COMUNICACIÓN CON EL BACKEND
       this.authService.login(loginData).subscribe({
         next: (response) => {
-          // El token ya se guardó gracias al operador 'tap' en tu auth.service.ts
-
-          // Ahora preguntamos por el estado real del negocio
           this.authService.getBusinessSetup().subscribe({
             next: (businessData) => {
               this.isLoading = false;
-
-              // Evaluamos el campo 'onboarding_completed' que viene de la base de datos
               if (businessData && businessData.onboarding_completed) {
-                // Usuario veterano -> Al Dashboard
                 this.router.navigate(['/dashboard']);
               } else {
-                // Usuario con progreso a medias -> Al Wizard
                 this.router.navigate(['/company-setup']);
               }
             },
             error: (err) => {
               this.isLoading = false;
-              // Si el backend responde con 404, significa que no existe el negocio
-              // Usuario nuevo -> Al Wizard
               this.router.navigate(['/company-setup']);
             },
           });
         },
         error: (err) => {
           this.isLoading = false;
-
-          // MANEJO DE CÓDIGOS DE ESTADO HTTP (Intacto)
           if (err.status === 401) {
-            // Error 401: Contraseña incorrecta
-            this.errorMessage =
-              err.error?.detail || 'Correo o contraseña incorrectos.';
+            this.errorMessage = err.error?.detail || 'Correo o contraseña incorrectos.';
           } else if (err.status === 403) {
-            // Error 403: Cuenta bloqueada por seguridad
-            this.errorMessage =
-              err.error?.detail || 'Cuenta bloqueada temporalmente.';
+            this.errorMessage = err.error?.detail || 'Cuenta bloqueada temporalmente.';
           } else {
-            // Error genérico
             this.errorMessage = 'Error de conexión con el servidor.';
           }
         },
@@ -132,8 +115,33 @@ export class LoginComponent {
     }
   }
 
-  // NAVEGACIÓN HACIA EL REGISTRO
-  goToRegister() {
-    this.router.navigate(['/register']);
+  handleGoogleResponse(response: any) {
+    this.isLoading = true;
+    this.errorMessage = '';
+    const googleToken = response.credential;
+    
+    this.authService.loginWithGoogle(googleToken).subscribe({
+      next: (res) => {
+        this.authService.getBusinessSetup().subscribe({
+          next: (businessData) => {
+            this.isLoading = false;
+            if (businessData && businessData.onboarding_completed) {
+              this.router.navigate(['/dashboard']);
+            } else {
+              this.router.navigate(['/company-setup']);
+            }
+          },
+          error: (err) => {
+            this.isLoading = false;
+            this.router.navigate(['/company-setup']);
+          },
+        });
+      },
+      error: (err) => {
+        this.isLoading = false;
+        console.error('Error con Google OAuth', err);
+        this.errorMessage = 'Hubo un error al iniciar sesión con Google.';
+      }
+    });
   }
 }

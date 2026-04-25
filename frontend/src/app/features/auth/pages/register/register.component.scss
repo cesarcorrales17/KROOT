@@ -454,3 +454,27 @@
 .nav-logo {
   cursor: pointer;
 }
+
+/* ==========================================
+   RESPONSIVIDAD (Móviles y Tablets)
+   ========================================== */
+@media (max-width: 768px) {
+  .login-layout {
+    flex-direction: column; /* Apila los elementos */
+  }
+
+  .visual-section {
+    display: none; /* Oculta la imagen grande en celulares */
+  }
+
+  .form-section {
+    width: 100%;
+    padding: 20px;
+  }
+
+  .mobile-brand {
+    display: flex; /* Muestra el logo centrado arriba del formulario */
+    justify-content: center;
+    margin-bottom: 2rem;
+  }
+}

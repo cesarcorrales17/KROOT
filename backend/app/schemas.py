@@ -11,6 +11,12 @@ class LoginRequest(BaseModel):
     password: str            
     rememberMe: bool = False 
 
+class GoogleAuthRequest(BaseModel):
+    token: str  # El JWT que entrega Google al Frontend
+
+class ResendVerificationRequest(BaseModel):
+    email: EmailStr
+
 # ==========================================
 # MODELOS DE RESPUESTA (Salida hacia Angular)
 # ==========================================
@@ -171,9 +177,6 @@ class SaleResponse(BaseModel):
     period_type: str
     period_date: date
     
-    # Opcionalmente podemos devolver más campos si el frontend los necesita luego, 
-    # pero estos son los básicos para confirmar la transacción.
-    
     class Config:
         from_attributes = True
 
@@ -279,6 +282,7 @@ class ProductUpdate(BaseModel):
     is_active: Optional[bool] = None
     min_stock: Optional[float] = None
     stock: Optional[float] = None
+    
 class ProductResponse(ProductBase):
     id: int
     business_id: int
@@ -298,8 +302,29 @@ class SaleDetailCreate(BaseModel):
     quantity: float
     unit_price: float
 
-class SaleCreate(BaseModel):
+class SalePosCreate(BaseModel):  # Renombrado ligeramente para no chocar con el SaleCreate financiero
     client_name: Optional[str] = None
     client_document: Optional[str] = None
     payment_method: str = "Efectivo"
     details: List[SaleDetailCreate]
+
+# ==========================================
+# ESQUEMAS PARA MOVIMIENTOS DE INVENTARIO (AJUSTES)
+# ==========================================
+
+class MovementCreate(BaseModel):
+    product_id: int
+    type: str  # "IN" o "OUT"
+    quantity: float
+    reason: str
+
+class MovementResponse(BaseModel):
+    id: str
+    type: str
+    quantity: float
+    reason: str
+    created_at: datetime
+    user_id: int
+
+    class Config:
+        from_attributes = True

@@ -213,11 +213,10 @@ export class RegisterComponent {
       this.authService.register(userData).subscribe({
         next: (response) => {
           this.isLoading = false;
-          // ÉXITO — MOSTRAMOS EL MENSAJE PARA QUE EL USUARIO REVISE SU CORREO
-          this.successMessage =
-            '¡Cuenta creada con éxito! Hemos enviado un correo de verificación a tu bandeja de entrada.';
-          // Opcional: resetear el formulario tras el registro exitoso
-          // this.registerForm.reset();
+          // RESTAURADO: Solo mostramos el mensaje de éxito, NO navegamos.
+          this.successMessage = '¡Cuenta creada con éxito! Hemos enviado un correo de verificación a tu bandeja de entrada.';
+          //this.currentStep = 1; // Opcional: devolverlo al paso 1 visualmente
+          this.registerForm.reset(); // Limpiamos el formulario
         },
         error: (err) => {
           this.isLoading = false;

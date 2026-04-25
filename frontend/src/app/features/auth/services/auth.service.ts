@@ -13,7 +13,9 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
+  // ==========================================
   // AUTENTICACIÓN PRINCIPAL
+  // ==========================================
 
   // Inicio de sesión
   login(credentials: any): Observable<any> {
@@ -27,12 +29,31 @@ export class AuthService {
     );
   }
 
-  // Registro de usuario
+  // Registro de usuario 
   register(userData: any): Observable<any> {
     return this.http.post<any>(`${this.apiUrl}/register`, userData);
   }
 
+  // NUEVO: Reenviar correo de verificación
+  resendVerification(email: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/resend-verification`, { email });
+  }
+
+  // NUEVO: Login / Registro con Google OAuth
+  loginWithGoogle(token: string): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/auth/google`, { token }).pipe(
+      tap((response: any) => {
+        if (response.access_token) {
+          localStorage.setItem('auth_token', response.access_token);
+          localStorage.setItem('refresh_token', response.refresh_token);
+        }
+      })
+    );
+  }
+
+  // ==========================================
   // RECUPERACIÓN DE CONTRASEÑA
+  // ==========================================
 
   // Paso 1: Solicitar el correo de recuperación
   forgotPassword(email: string): Observable<any> {
@@ -47,7 +68,9 @@ export class AuthService {
     });
   }
 
+  // ==========================================
   // GESTIÓN DE SESIÓN
+  // ==========================================
 
   // Petición silenciosa para renovar tokens
   refreshToken(): Observable<any> {
@@ -71,7 +94,9 @@ export class AuthService {
     this.router.navigate(['/login']);
   }
 
+  // ==========================================
   // WIZARD DE EMPRESA (ONBOARDING)
+  // ==========================================
 
   // Función de apoyo para obtener el token
   private getHeaders() {
@@ -101,7 +126,9 @@ export class AuthService {
     );
   }
 
+  // ==========================================
   // GESTIÓN DE PERFIL
+  // ==========================================
   getBusinessProfile(): Observable<any> {
     return this.http.get<any>(
       `${this.apiUrl}/business/profile`,
@@ -144,6 +171,7 @@ export class AuthService {
       this.getHeaders(),
     );
   }
+  
   // Enviar Venta del Punto de Venta (POS)
   createPosSale(saleData: any): Observable<any> {
     return this.http.post<any>(

@@ -15,6 +15,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)      # Estado del usuario
     failed_attempts = Column(Integer, default=0)   # Contador de intentos fallidos
     locked_until = Column(DateTime, nullable=True) # Tiempo de bloqueo por 15 min
+    password_changed_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # REGLAS DEL REGISTRO Y WIZARD
     is_verified = Column(Boolean, default=False)
@@ -23,6 +24,10 @@ class User(Base):
     
     # Relación uno a uno con Business (un usuario tiene una empresa, una empresa pertenece a un usuario)
     business = relationship("Business", back_populates="user", uselist=False, cascade="all, delete-orphan")
+
+    # Campos para auditoría y seguridad
+    last_login_ip = Column(String, nullable=True)
+    auth_provider = Column(String, default="local") # "local" o "google"
 
 # TABLA PARA TOKENS DE RECUPERACIÓN DE CONTRASEÑA
 class PasswordResetToken(Base):
